@@ -109,7 +109,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f507287dc183d34fa93605b08bcf23f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 0.01
+  speed: 0.005
   player: {fileID: 6119415006849629868, guid: 14b532f0fbad637429ac3cc445fb73fb, type: 3}
   powerup1: {fileID: 3321379030193853469, guid: 906f43793fdfe454f995e9e5fa2cfed4, type: 3}
   powerup2: {fileID: 8238817786786490993, guid: 99385eb7879e8e444bb09e3d41dc671a, type: 3}

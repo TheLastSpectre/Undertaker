@@ -18,6 +18,9 @@ public class EnemyBHVR : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        Physics.IgnoreCollision(powerup1.GetComponent<Collider>(), GetComponent<Collider>());
+        Physics.IgnoreCollision(powerup2.GetComponent<Collider>(), GetComponent<Collider>());
+        transform.LookAt(player.transform.position);
         Vector3 direction = Vector3.Normalize(player.transform.position - transform.position);
         transform.position += direction * speed;
     }

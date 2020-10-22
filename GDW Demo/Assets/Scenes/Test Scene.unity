@@ -592,7 +592,7 @@ MonoBehaviour:
   enemy: {fileID: 4069953611963350218, guid: 22d91f437f3506543b5529f4d9b05dca, type: 3}
   spawnCD: 6
   spawncount: 4
-  spawnbuffer: 0.5
+  spawnbuffer: 0.7
 --- !u!1 &1158227727
 GameObject:
   m_ObjectHideFlags: 0
@@ -924,7 +924,7 @@ MonoBehaviour:
   enemy: {fileID: 4069953611963350218, guid: 22d91f437f3506543b5529f4d9b05dca, type: 3}
   spawnCD: 6
   spawncount: 4
-  spawnbuffer: 0.5
+  spawnbuffer: 0.7
 --- !u!1 &1434107800
 GameObject:
   m_ObjectHideFlags: 0
@@ -1005,7 +1005,7 @@ MonoBehaviour:
   enemy: {fileID: 4069953611963350218, guid: 22d91f437f3506543b5529f4d9b05dca, type: 3}
   spawnCD: 6
   spawncount: 4
-  spawnbuffer: 0.5
+  spawnbuffer: 0.7
 --- !u!1 &1619492710
 GameObject:
   m_ObjectHideFlags: 0
@@ -1220,7 +1220,7 @@ MonoBehaviour:
   enemy: {fileID: 4069953611963350218, guid: 22d91f437f3506543b5529f4d9b05dca, type: 3}
   spawnCD: 6
   spawncount: 4
-  spawnbuffer: 0.5
+  spawnbuffer: 0.7
 --- !u!1 &1928763306
 GameObject:
   m_ObjectHideFlags: 0
