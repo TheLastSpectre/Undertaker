@@ -4,15 +4,21 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    Rigidbody rigidbody;
     public float speed = 10.0f;
+	public Camera cam;
+    public float factor = 1.0f;
+    public GameObject bullet;
+    public float bulletspeed;
+    public float cooldown;
+    private float timer;
 
 
     bool isGrounded = false;
     // Start is called before the first frame update
     void Start()
-    {
-        rigidbody = GetComponent<Rigidbody>();
+    { 
+        Physics.IgnoreCollision(bullet.GetComponent<Collider>(), GetComponent<Collider>());
+        timer = cooldown;
     }
 
     // Update is called once per frame
@@ -41,11 +47,26 @@ public class PlayerMovement : MonoBehaviour
             PosControl.x = 1.0f;
         }
 
+        timer -= Time.deltaTime;
+
+        if (Input.GetKey(KeyCode.Space) && timer <= 0)
+        {
+            GameObject bulletClone;
+            bulletClone = Instantiate(bullet, transform.position, transform.rotation);
+            timer = cooldown;
+        }
+
+        var dist = Vector3.Distance(transform.position, cam.transform.position) * factor;
+        Vector3 pos = Input.mousePosition;
+        pos.z = dist;
+        pos = Camera.main.ScreenToWorldPoint(pos);
+        transform.LookAt(pos, Vector3.up);
+
+
         //Makes player move
         Vector3 InputDir = PosControl.normalized;
         Vector3 NewPos = transform.position + InputDir.normalized * speed * Time.deltaTime;
         transform.position = NewPos;
-
     }
 }
 
