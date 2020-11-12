@@ -212,6 +212,33 @@ void SetupShaderForFrame(const Shader::sptr& shader, const glm::mat4& view, cons
 	shader->SetUniform("u_CamPos", camPos);
 }
 
+//Keyboard Variables
+GLfloat tranX = 0.0f;
+GLfloat tranY = 0.0f;
+GLfloat rotX = 0.0f;
+GLfloat rotY = 0.0f;
+
+//Keyboard Input
+void keyboard() {
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+		tranX -= 0.3f;
+
+	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+		tranX += 0.3f;
+
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+		tranY += 0.3f;
+
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+		tranY -= 0.3f;
+
+	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+		rotX += 1.5f;
+
+	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+		rotX -= 1.5f;
+}
+
 int main() {
 	Logger::Init(); // We'll borrow the logger from the toolkit, but we need to initialize it
 
@@ -238,6 +265,9 @@ int main() {
 	// Push another scope so most memory should be freed *before* we exit the app
 	{
 		#pragma region Shader and ImGui
+
+		//Load OBJ
+		VertexArrayObject::sptr vao1 = ObjLoader::LoadFromFile("models/cube2.obj");
 
 		// Load our shaders
 		Shader::sptr shader = Shader::Create();
@@ -323,8 +353,8 @@ int main() {
 
 		// Load some textures from files
 		Texture2D::sptr grass = Texture2D::LoadFromFile("images/Grass.jpg");
-		Texture2D::sptr diffuse2 = Texture2D::LoadFromFile("images/box.bmp");
-		Texture2D::sptr specular = Texture2D::LoadFromFile("images/Stone_001_Specular.png"); 
+		//Texture2D::sptr diffuse2 = Texture2D::LoadFromFile("images/box.bmp");
+		//Texture2D::sptr specular = Texture2D::LoadFromFile("images/Stone_001_Specular.png"); 
 
 
 		// Creating an empty texture
@@ -371,6 +401,7 @@ int main() {
 			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/Terrain.obj");
 			terrain.emplace<RendererComponent>().SetMesh(vao).SetMaterial(grassmaterial);
 			terrain.get<Transform>().SetLocalPosition(0.0f, 0.0f, 1.0f);
+			terrain.get<Transform>().SetLocalRotation(0.0f, 0.0f, 1.0f);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(terrain);
 		}
 		
@@ -387,6 +418,14 @@ int main() {
 			camera.SetFovDegrees(90.0f); // Set an initial FOV
 			camera.SetOrthoHeight(3.0f);
 			BehaviourBinding::Bind<CameraControlBehaviour>(cameraObject);
+		}
+
+		GameObject barrier = scene->CreateEntity("barrier");
+		{
+			VertexArrayObject::sptr vao1 = ObjLoader::LoadFromFile("models/cube2.obj");
+			barrier.emplace<RendererComponent>().SetMesh(vao1).SetMaterial(grassmaterial);
+			barrier.get<Transform>().SetLocalPosition(0.0f, 3.0f, 10.0f);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(barrier);
 		}
 
 		#pragma endregion 
@@ -433,6 +472,8 @@ int main() {
 			if (frameIx >= 128)
 				frameIx = 0;
 
+			keyboard();
+
 			// We'll make sure our UI isn't focused before we start handling input for our game
 			if (!ImGui::IsAnyWindowFocused()) {
 				// We need to poll our key watchers so they can do their logic with the GLFW state
@@ -464,6 +505,9 @@ int main() {
 			glm::mat4 view = glm::inverse(camTransform.LocalTransform());
 			glm::mat4 projection = cameraObject.get<Camera>().GetProjection();
 			glm::mat4 viewProjection = projection * view;
+
+			barrier.get<Transform>().SetLocalPosition(tranX, tranY, 1.0f);
+			barrier.get<Transform>().SetLocalRotation(0.0f, rotX, 1.0f);
 						
 			// Sort the renderers by shader and material, we will go for a minimizing context switches approach here,
 			// but you could for instance sort front to back to optimize for fill rate if you have intensive fragment shaders
@@ -503,6 +547,7 @@ int main() {
 				// Render the mesh
 				RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
 			});
+
 
 			// Draw our ImGui content
 			RenderImGui();
