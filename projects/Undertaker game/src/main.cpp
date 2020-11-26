@@ -27,6 +27,7 @@
 #include "Gameplay/GameObjectTag.h"
 #include "Gameplay/IBehaviour.h"
 #include "Gameplay/Transform.h"
+#include "Gameplay/Enemy.h"
 #include "Graphics/Texture2D.h"
 #include "Graphics/Texture2DData.h"
 #include "Utilities/InputHelpers.h"
@@ -40,6 +41,8 @@
 #include "Gameplay/Timing.h"
 #include "Graphics/TextureCubeMap.h"
 #include "Graphics/TextureCubeMapData.h"
+#include <cstdlib>
+
 
 #define LOG_GL_NOTIFICATIONS
 
@@ -214,29 +217,70 @@ void SetupShaderForFrame(const Shader::sptr& shader, const glm::mat4& view, cons
 
 //Keyboard Variables
 GLfloat tranX = 0.0f;
-GLfloat tranY = 0.0f;
+GLfloat tranZ = 0.0f;
 GLfloat rotX = 0.0f;
 GLfloat rotY = 0.0f;
+GLfloat EnemyX = 0.0f;
+GLfloat EnemyZ = 0.0f;
+int RandNum = 0;
+int TimeCount = 0;
+int LastTimeCount = 0;
+bool PowerUp = false;
+bool PowerUpTaken = false;
 
 //Keyboard Input
 void keyboard() {
-	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-		tranX -= 0.3f;
+	//Left
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS && PowerUp == false)
+	{
+		tranX += 0.1f;
+	}
+	else if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS && PowerUp == true)
+	{
+		tranX += 0.2f;
+	}
 
-	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-		tranX += 0.3f;
+	//Right
+	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS && PowerUp == false)
+	{
+		tranX -= 0.1f;
+	}
+	else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS && PowerUp == true)
+	{
+		tranX -= 0.2f;
+	}
 
-	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-		tranY += 0.3f;
+	//Up
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && PowerUp == false)
+	{
+		tranZ += 0.1f;
+	}
+	else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && PowerUp == true)
+	{
+		tranZ += 0.2f;
+	}
 
-	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-		tranY -= 0.3f;
+	//Down
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && PowerUp == false)
+	{
+		tranZ -= 0.1f;
+	}
+	else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && PowerUp == true)
+	{
+		tranZ -= 0.2f;
+	}
 
 	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+	{
 		rotX += 1.5f;
+		PowerUp = false;
+	}
 
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+	{
 		rotX -= 1.5f;
+		PowerUp = true;
+	}
 }
 
 int main() {
@@ -267,7 +311,7 @@ int main() {
 		#pragma region Shader and ImGui
 
 		//Load OBJ
-		VertexArrayObject::sptr vao1 = ObjLoader::LoadFromFile("models/cube2.obj");
+		//VertexArrayObject::sptr vao1 = ObjLoader::LoadFromFile("models/cube2.obj");
 
 		// Load our shaders
 		Shader::sptr shader = Shader::Create();
@@ -277,12 +321,12 @@ int main() {
 
 		glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 2.0f);
 		glm::vec3 lightCol = glm::vec3(0.9f, 0.85f, 0.5f);
-		float     lightAmbientPow = 0.05f;
+		float     lightAmbientPow = 1.0f;
 		float     lightSpecularPow = 1.0f;
 		glm::vec3 ambientCol = glm::vec3(1.0f);
 		float     ambientPow = 0.1f;
-		float     lightLinearFalloff = 0.09f;
-		float     lightQuadraticFalloff = 0.032f;
+		float     lightLinearFalloff = 0.0f;
+		float     lightQuadraticFalloff = 0.0f;
 
 		// These are our application / scene level uniforms that don't necessarily update
 		// every frame
@@ -353,6 +397,7 @@ int main() {
 
 		// Load some textures from files
 		Texture2D::sptr grass = Texture2D::LoadFromFile("images/Grass.jpg");
+		Texture2D::sptr checker = Texture2D::LoadFromFile("images/checker.jpg");
 		//Texture2D::sptr diffuse2 = Texture2D::LoadFromFile("images/box.bmp");
 		//Texture2D::sptr specular = Texture2D::LoadFromFile("images/Stone_001_Specular.png"); 
 
@@ -389,6 +434,11 @@ int main() {
 		grassmaterial->Set("s_Diffuse", grass);
 		grassmaterial->Set("u_Shininess", 8.0f);
 
+		ShaderMaterial::sptr checkertexture = ShaderMaterial::Create();
+		checkertexture->Shader = shader;
+		checkertexture->Set("s_Diffuse", checker);
+		checkertexture->Set("u_Shininess", 8.0f);
+
 		// Load a second material for our reflective material!
 		Shader::sptr reflectiveShader = Shader::Create();
 		reflectiveShader->LoadShaderPartFromFile("shaders/vertex_shader.glsl", GL_VERTEX_SHADER);
@@ -408,7 +458,7 @@ int main() {
 		// Create an object to be our camera
 		GameObject cameraObject = scene->CreateEntity("Camera");
 		{
-			cameraObject.get<Transform>().SetLocalPosition(0, 3, 3).LookAt(glm::vec3(0, 0, 0));
+			cameraObject.get<Transform>().SetLocalPosition(0, 15, -8).LookAt(glm::vec3(0, 0, -4));
 
 			// We'll make our camera a component of the camera object
 			Camera& camera = cameraObject.emplace<Camera>();// Camera::Create();
@@ -417,16 +467,38 @@ int main() {
 			camera.LookAt(glm::vec3(0));
 			camera.SetFovDegrees(90.0f); // Set an initial FOV
 			camera.SetOrthoHeight(3.0f);
-			BehaviourBinding::Bind<CameraControlBehaviour>(cameraObject);
+			BehaviourBinding::BindDisabled<CameraControlBehaviour>(cameraObject);
 		}
+
+		VertexArrayObject::sptr vao1 = ObjLoader::LoadFromFile("models/fence.obj");
+		VertexArrayObject::sptr vao2 = ObjLoader::LoadFromFile("models/cube2.obj");
+		VertexArrayObject::sptr vao3 = ObjLoader::LoadFromFile("models/house.obj");
 
 		GameObject barrier = scene->CreateEntity("barrier");
 		{
-			VertexArrayObject::sptr vao1 = ObjLoader::LoadFromFile("models/cube2.obj");
-			barrier.emplace<RendererComponent>().SetMesh(vao1).SetMaterial(grassmaterial);
-			barrier.get<Transform>().SetLocalPosition(0.0f, 3.0f, 10.0f);
+			barrier.emplace<RendererComponent>().SetMesh(vao3).SetMaterial(checkertexture);
+			barrier.get<Transform>().SetLocalPosition(tranX, 3.0f, tranZ);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(barrier);
 		}
+
+
+			GameObject cube = scene->CreateEntity("cube");
+			{
+				cube.emplace<RendererComponent>().SetMesh(vao2).SetMaterial(checkertexture);
+				cube.get<Transform>().SetLocalPosition(3.0f, 1.0f, 8.0f);
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(cube);
+			}
+
+			/*
+			GameObject enemy = scene->CreateEntity("enemy");
+			{
+				enemy.emplace<RendererComponent>().SetMesh(vao1).SetMaterial(checkertexture);
+				enemy.get<Transform>().SetLocalPosition(0, 3.0f, 0);
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(enemy);
+			}
+			*/
+
+		
 
 		#pragma endregion 
 		{
@@ -456,6 +528,8 @@ int main() {
 		Timing& time = Timing::Instance();
 		time.LastFrame = glfwGetTime();
 
+		double testNum;
+
 		///// Game loop /////
 		while (!glfwWindowShouldClose(window)) {
 			glfwPollEvents();
@@ -464,7 +538,14 @@ int main() {
 			time.CurrentFrame = glfwGetTime();
 			time.DeltaTime = static_cast<float>(time.CurrentFrame - time.LastFrame);
 
+				TimeCount = TimeCount + 1;
+				
+
 			time.DeltaTime = time.DeltaTime > 1.0f ? 1.0f : time.DeltaTime;
+
+
+			
+			
 
 			// Update our FPS tracker data
 			fpsBuffer[frameIx] = 1.0f / time.DeltaTime;
@@ -506,8 +587,68 @@ int main() {
 			glm::mat4 projection = cameraObject.get<Camera>().GetProjection();
 			glm::mat4 viewProjection = projection * view;
 
-			barrier.get<Transform>().SetLocalPosition(tranX, tranY, 1.0f);
+			//Player Collision
+			
+
+			//Set Player Movements
+			barrier.get<Transform>().SetLocalPosition(tranX, 1.0f, tranZ);
 			barrier.get<Transform>().SetLocalRotation(0.0f, rotX, 1.0f);
+
+			//Spawn Enemy
+			if(TimeCount % 5 == 0)
+			{
+				RandNum = rand() % 3;
+				if (RandNum == 0)
+				{
+					EnemyX = (rand() % 22) - 9;
+					EnemyZ = (rand() % 22) - 11;
+					if ((EnemyX > -9 && EnemyX < -7) || (EnemyX > 11 && EnemyX < 13))
+					{
+						GameObject enemy = scene->CreateEntity("enemy");
+						{
+							enemy.emplace<RendererComponent>().SetMesh(vao1).SetMaterial(checkertexture);
+							enemy.get<Transform>().SetLocalPosition(EnemyX, 3.0f, EnemyZ);
+							BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(enemy);
+						}
+						
+					}
+				}
+				else if (RandNum == 1)
+				{
+					EnemyX = (rand() % 22) - 9;
+					EnemyZ = (rand() % 24) - 13;
+					if ((EnemyZ > -13 && EnemyZ < -11) || (EnemyZ > 9 && EnemyZ < 11))
+					{
+						GameObject enemy = scene->CreateEntity("enemy");
+						{
+							enemy.emplace<RendererComponent>().SetMesh(vao1).SetMaterial(checkertexture);
+							enemy.get<Transform>().SetLocalPosition(EnemyX, 3.0f, EnemyZ);
+							BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(enemy);
+						}
+						
+					}
+
+				}
+			}
+
+
+			//Power Up
+			if (tranX > 2.0f && tranX < 5.0f && tranZ > 6.5f && tranZ < 8.0f && PowerUpTaken == false)
+			{				
+				if (PowerUpTaken == false)
+				{
+					PowerUp = true;
+					LastTimeCount = TimeCount + 300;
+				}
+
+				PowerUpTaken = true;
+			}
+
+			if (TimeCount == LastTimeCount)
+			{
+				PowerUp = false;
+			}
+			
 						
 			// Sort the renderers by shader and material, we will go for a minimizing context switches approach here,
 			// but you could for instance sort front to back to optimize for fill rate if you have intensive fragment shaders
@@ -545,7 +686,20 @@ int main() {
 					currentMat->Apply();
 				}
 				// Render the mesh
-				RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
+				if (renderer.Mesh == vao2 && PowerUpTaken == true)
+				{				
+				}
+				else if (renderer.Mesh == vao3)
+				{
+					barrier.get<Transform>().SetLocalPosition(tranX	, 1.0f, tranZ);
+					RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
+					barrier.get<Transform>().SetLocalPosition(0, 1.0f, 0);
+					RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
+				}
+				else
+				{
+					RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
+				}
 			});
 
 
@@ -556,7 +710,7 @@ int main() {
 			glfwSwapBuffers(window);
 			time.LastFrame = time.CurrentFrame;
 		}
-
+		
 		// Nullify scene so that we can release references
 		Application::Instance().ActiveScene = nullptr;
 		ShutdownImGui();
