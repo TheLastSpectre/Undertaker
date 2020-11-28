@@ -222,50 +222,53 @@ GLfloat rotX = 0.0f;
 GLfloat rotY = 0.0f;
 GLfloat EnemyX = 0.0f;
 GLfloat EnemyZ = 0.0f;
+GLfloat EnemyPos[20000];
+int EnemyNum = 0;
 int RandNum = 0;
 int TimeCount = 0;
 int LastTimeCount = 0;
+int EnemySpawnCount = 0;
 bool PowerUp = false;
 bool PowerUpTaken = false;
 
 //Keyboard Input
 void keyboard() {
 	//Left
-	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS && PowerUp == false)
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && PowerUp == false)
 	{
 		tranX += 0.1f;
 	}
-	else if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS && PowerUp == true)
+	else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && PowerUp == true)
 	{
 		tranX += 0.2f;
 	}
 
 	//Right
-	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS && PowerUp == false)
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && PowerUp == false)
 	{
 		tranX -= 0.1f;
 	}
-	else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS && PowerUp == true)
+	else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && PowerUp == true)
 	{
 		tranX -= 0.2f;
 	}
 
 	//Up
-	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && PowerUp == false)
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && PowerUp == false)
 	{
 		tranZ += 0.1f;
 	}
-	else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && PowerUp == true)
+	else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && PowerUp == true)
 	{
 		tranZ += 0.2f;
 	}
 
 	//Down
-	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && PowerUp == false)
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && PowerUp == false)
 	{
 		tranZ -= 0.1f;
 	}
-	else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && PowerUp == true)
+	else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && PowerUp == true)
 	{
 		tranZ -= 0.2f;
 	}
@@ -452,13 +455,14 @@ int main() {
 			terrain.emplace<RendererComponent>().SetMesh(vao).SetMaterial(grassmaterial);
 			terrain.get<Transform>().SetLocalPosition(0.0f, 0.0f, 1.0f);
 			terrain.get<Transform>().SetLocalRotation(0.0f, 0.0f, 1.0f);
+			terrain.get<Transform>().SetLocalScale(2.0f, 0.0f, 2.0f);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(terrain);
 		}
 		
 		// Create an object to be our camera
 		GameObject cameraObject = scene->CreateEntity("Camera");
 		{
-			cameraObject.get<Transform>().SetLocalPosition(0, 15, -8).LookAt(glm::vec3(0, 0, -4));
+			cameraObject.get<Transform>().SetLocalPosition(0, 33.5, -18).LookAt(glm::vec3(0, 0, -10));
 
 			// We'll make our camera a component of the camera object
 			Camera& camera = cameraObject.emplace<Camera>();// Camera::Create();
@@ -471,8 +475,8 @@ int main() {
 		}
 
 		VertexArrayObject::sptr vao1 = ObjLoader::LoadFromFile("models/fence.obj");
-		VertexArrayObject::sptr vao2 = ObjLoader::LoadFromFile("models/cube2.obj");
-		VertexArrayObject::sptr vao3 = ObjLoader::LoadFromFile("models/house.obj");
+		VertexArrayObject::sptr vao2 = ObjLoader::LoadFromFile("models/powerup.obj");
+		VertexArrayObject::sptr vao3 = ObjLoader::LoadFromFile("models/shotgun.obj");
 
 		GameObject barrier = scene->CreateEntity("barrier");
 		{
@@ -482,21 +486,21 @@ int main() {
 		}
 
 
-			GameObject cube = scene->CreateEntity("cube");
+			GameObject powerup = scene->CreateEntity("powerup");
 			{
-				cube.emplace<RendererComponent>().SetMesh(vao2).SetMaterial(checkertexture);
-				cube.get<Transform>().SetLocalPosition(3.0f, 1.0f, 8.0f);
-				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(cube);
+				powerup.emplace<RendererComponent>().SetMesh(vao2).SetMaterial(checkertexture);
+				powerup.get<Transform>().SetLocalPosition(3.0f, 1.0f, 8.0f);
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(powerup);
 			}
 
-			/*
+			
 			GameObject enemy = scene->CreateEntity("enemy");
 			{
 				enemy.emplace<RendererComponent>().SetMesh(vao1).SetMaterial(checkertexture);
 				enemy.get<Transform>().SetLocalPosition(0, 3.0f, 0);
 				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(enemy);
 			}
-			*/
+			
 
 		
 
@@ -538,8 +542,8 @@ int main() {
 			time.CurrentFrame = glfwGetTime();
 			time.DeltaTime = static_cast<float>(time.CurrentFrame - time.LastFrame);
 
-				TimeCount = TimeCount + 1;
-				
+			TimeCount = TimeCount + 1;
+			EnemySpawnCount = TimeCount / 50;
 
 			time.DeltaTime = time.DeltaTime > 1.0f ? 1.0f : time.DeltaTime;
 
@@ -594,44 +598,6 @@ int main() {
 			barrier.get<Transform>().SetLocalPosition(tranX, 1.0f, tranZ);
 			barrier.get<Transform>().SetLocalRotation(0.0f, rotX, 1.0f);
 
-			//Spawn Enemy
-			if(TimeCount % 5 == 0)
-			{
-				RandNum = rand() % 3;
-				if (RandNum == 0)
-				{
-					EnemyX = (rand() % 22) - 9;
-					EnemyZ = (rand() % 22) - 11;
-					if ((EnemyX > -9 && EnemyX < -7) || (EnemyX > 11 && EnemyX < 13))
-					{
-						GameObject enemy = scene->CreateEntity("enemy");
-						{
-							enemy.emplace<RendererComponent>().SetMesh(vao1).SetMaterial(checkertexture);
-							enemy.get<Transform>().SetLocalPosition(EnemyX, 3.0f, EnemyZ);
-							BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(enemy);
-						}
-						
-					}
-				}
-				else if (RandNum == 1)
-				{
-					EnemyX = (rand() % 22) - 9;
-					EnemyZ = (rand() % 24) - 13;
-					if ((EnemyZ > -13 && EnemyZ < -11) || (EnemyZ > 9 && EnemyZ < 11))
-					{
-						GameObject enemy = scene->CreateEntity("enemy");
-						{
-							enemy.emplace<RendererComponent>().SetMesh(vao1).SetMaterial(checkertexture);
-							enemy.get<Transform>().SetLocalPosition(EnemyX, 3.0f, EnemyZ);
-							BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(enemy);
-						}
-						
-					}
-
-				}
-			}
-
-
 			//Power Up
 			if (tranX > 2.0f && tranX < 5.0f && tranZ > 6.5f && tranZ < 8.0f && PowerUpTaken == false)
 			{				
@@ -649,6 +615,35 @@ int main() {
 				PowerUp = false;
 			}
 			
+			//Spawn Enemy
+			if (TimeCount % 5 == 0)
+			{
+				RandNum = rand() % 3;
+
+				if (RandNum == 0)
+				{
+					EnemyX = (rand() % 44) - 18;
+					EnemyZ = (rand() % 44) - 22;
+					if ((EnemyX > -18 && EnemyX < -14) || (EnemyX > 22 && EnemyX < 26))
+					{
+						EnemyPos[EnemyNum] = EnemyX;
+						EnemyNum = EnemyNum + 1;
+						EnemyPos[EnemyNum] = EnemyZ;
+						EnemyNum = EnemyNum + 1;
+					}
+			}else if (RandNum == 1)
+				{
+					EnemyX = (rand() % 44) - 18;
+					EnemyZ = (rand() % 48) - 26;
+					if ((EnemyZ > -26 && EnemyZ < -22) || (EnemyZ > 18 && EnemyZ < 22))
+					{
+						EnemyPos[EnemyNum] = EnemyX;
+						EnemyNum = EnemyNum + 1;
+						EnemyPos[EnemyNum] = EnemyZ;
+						EnemyNum = EnemyNum + 1;
+					}
+				}
+			}
 						
 			// Sort the renderers by shader and material, we will go for a minimizing context switches approach here,
 			// but you could for instance sort front to back to optimize for fill rate if you have intensive fragment shaders
@@ -689,12 +684,33 @@ int main() {
 				if (renderer.Mesh == vao2 && PowerUpTaken == true)
 				{				
 				}
-				else if (renderer.Mesh == vao3)
+				else if (renderer.Mesh == vao1)
 				{
-					barrier.get<Transform>().SetLocalPosition(tranX	, 1.0f, tranZ);
-					RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
-					barrier.get<Transform>().SetLocalPosition(0, 1.0f, 0);
-					RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
+					for (int Count = 0; Count < 200; Count++)
+					{
+						enemy.get<Transform>().SetLocalPosition(EnemyPos[Count], 1.0f, EnemyPos[Count + 1]);
+						if (EnemyPos[Count] > tranX)
+						{
+							EnemyPos[Count] = EnemyPos[Count] - 0.02;
+						}
+						else if (EnemyPos[Count] < tranX)
+						{
+							EnemyPos[Count] = EnemyPos[Count] + 0.02;
+						}
+
+						Count = Count + 1;
+
+						if (EnemyPos[Count] > tranZ)
+						{
+							EnemyPos[Count] = EnemyPos[Count] - 0.02;
+						}
+						else if (EnemyPos[Count] < tranZ)
+						{
+							EnemyPos[Count] = EnemyPos[Count] + 0.02;
+						}
+
+						RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
+					}
 				}
 				else
 				{
