@@ -215,7 +215,7 @@ void SetupShaderForFrame(const Shader::sptr& shader, const glm::mat4& view, cons
 	shader->SetUniform("u_CamPos", camPos);
 }
 
-//Keyboard Variables
+//Variables
 GLfloat tranX = 0.0f;
 GLfloat tranZ = 0.0f;
 GLfloat rotX = 0.0f;
@@ -223,6 +223,11 @@ GLfloat rotY = 0.0f;
 GLfloat EnemyX = 0.0f;
 GLfloat EnemyZ = 0.0f;
 GLfloat EnemyPos[20000];
+GLfloat BarrierX = -24;
+GLfloat BarrierZ = -27.5;
+GLfloat PosTimer;
+GLfloat PosMaxTime = 1.5f;
+GLfloat t = 0.0f;
 int EnemyNum = 0;
 int RandNum = 0;
 int TimeCount = 0;
@@ -230,6 +235,10 @@ int LastTimeCount = 0;
 int EnemySpawnCount = 0;
 bool PowerUp = false;
 bool PowerUpTaken = false;
+bool PULerp = true;
+
+GLfloat PUOriginPos = 1.0f;
+GLfloat PUNewPos = 3.5f;
 
 //Keyboard Input
 void keyboard() {
@@ -284,6 +293,12 @@ void keyboard() {
 		rotX -= 1.5f;
 		PowerUp = true;
 	}
+}
+
+template<typename T>
+T LERP(const T& p0, const T& p1, float t)
+{
+	return(1.0f - t) * p0 + t * p1;
 }
 
 int main() {
@@ -401,6 +416,9 @@ int main() {
 		// Load some textures from files
 		Texture2D::sptr grass = Texture2D::LoadFromFile("images/Grass.jpg");
 		Texture2D::sptr checker = Texture2D::LoadFromFile("images/checker.jpg");
+		Texture2D::sptr red = Texture2D::LoadFromFile("images/red.jpg");
+		Texture2D::sptr stone = Texture2D::LoadFromFile("images/stone.jpg");
+		Texture2D::sptr wood = Texture2D::LoadFromFile("images/wood.jpg");
 		//Texture2D::sptr diffuse2 = Texture2D::LoadFromFile("images/box.bmp");
 		//Texture2D::sptr specular = Texture2D::LoadFromFile("images/Stone_001_Specular.png"); 
 
@@ -442,6 +460,21 @@ int main() {
 		checkertexture->Set("s_Diffuse", checker);
 		checkertexture->Set("u_Shininess", 8.0f);
 
+		ShaderMaterial::sptr redtexture = ShaderMaterial::Create();
+		redtexture->Shader = shader;
+		redtexture->Set("s_Diffuse", red);
+		redtexture->Set("u_Shininess", 8.0f);
+
+		ShaderMaterial::sptr stonetexture = ShaderMaterial::Create();
+		stonetexture->Shader = shader;
+		stonetexture->Set("s_Diffuse", stone);
+		stonetexture->Set("u_Shininess", 8.0f);
+
+		ShaderMaterial::sptr woodtexture = ShaderMaterial::Create();
+		woodtexture->Shader = shader;
+		woodtexture->Set("s_Diffuse", wood);
+		woodtexture->Set("u_Shininess", 2.0f);
+
 		// Load a second material for our reflective material!
 		Shader::sptr reflectiveShader = Shader::Create();
 		reflectiveShader->LoadShaderPartFromFile("shaders/vertex_shader.glsl", GL_VERTEX_SHADER);
@@ -454,7 +487,6 @@ int main() {
 			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/Terrain.obj");
 			terrain.emplace<RendererComponent>().SetMesh(vao).SetMaterial(grassmaterial);
 			terrain.get<Transform>().SetLocalPosition(0.0f, 0.0f, 1.0f);
-			terrain.get<Transform>().SetLocalRotation(0.0f, 0.0f, 1.0f);
 			terrain.get<Transform>().SetLocalScale(2.0f, 0.0f, 2.0f);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(terrain);
 		}
@@ -474,35 +506,71 @@ int main() {
 			BehaviourBinding::BindDisabled<CameraControlBehaviour>(cameraObject);
 		}
 
-		VertexArrayObject::sptr vao1 = ObjLoader::LoadFromFile("models/fence.obj");
+		VertexArrayObject::sptr vao1 = ObjLoader::LoadFromFile("models/cube2.obj");
 		VertexArrayObject::sptr vao2 = ObjLoader::LoadFromFile("models/powerup.obj");
 		VertexArrayObject::sptr vao3 = ObjLoader::LoadFromFile("models/shotgun.obj");
+		VertexArrayObject::sptr vao4 = ObjLoader::LoadFromFile("models/cross.obj");
+		VertexArrayObject::sptr vao5 = ObjLoader::LoadFromFile("models/cube2.obj");
+		VertexArrayObject::sptr vao6 = ObjLoader::LoadFromFile("models/fence.obj");
+		VertexArrayObject::sptr vao7 = ObjLoader::LoadFromFile("models/fencegate.obj");
 
+		//Player vao
+		GameObject player = scene->CreateEntity("player");
+		{
+			player.emplace<RendererComponent>().SetMesh(vao3).SetMaterial(checkertexture);
+			player.get<Transform>().SetLocalPosition(tranX, 3.0f, tranZ);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(player);
+		}
+
+		//Barrier vao
 		GameObject barrier = scene->CreateEntity("barrier");
 		{
-			barrier.emplace<RendererComponent>().SetMesh(vao3).SetMaterial(checkertexture);
-			barrier.get<Transform>().SetLocalPosition(tranX, 3.0f, tranZ);
+			barrier.emplace<RendererComponent>().SetMesh(vao6).SetMaterial(woodtexture);
+			barrier.get<Transform>().SetLocalPosition(-24, 3.0f, -27.5f);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(barrier);
 		}
 
+		GameObject fencegate = scene->CreateEntity("fencegate");
+		{
+			fencegate.emplace<RendererComponent>().SetMesh(vao7).SetMaterial(woodtexture);
+			fencegate.get<Transform>().SetLocalPosition(-1, 3.0f, 26);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(fencegate);
+		}
 
-			GameObject powerup = scene->CreateEntity("powerup");
-			{
-				powerup.emplace<RendererComponent>().SetMesh(vao2).SetMaterial(checkertexture);
-				powerup.get<Transform>().SetLocalPosition(3.0f, 1.0f, 8.0f);
-				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(powerup);
-			}
+		//Powerup vao
+		GameObject powerup = scene->CreateEntity("powerup");
+		{
+			powerup.emplace<RendererComponent>().SetMesh(vao2).SetMaterial(redtexture);
+			powerup.get<Transform>().SetLocalPosition(3.0f, 1.0f, 8.0f);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(powerup);
+		}
 
-			
-			GameObject enemy = scene->CreateEntity("enemy");
-			{
-				enemy.emplace<RendererComponent>().SetMesh(vao1).SetMaterial(checkertexture);
-				enemy.get<Transform>().SetLocalPosition(0, 3.0f, 0);
-				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(enemy);
-			}
-			
+		//Enemy vao	
+		GameObject enemy = scene->CreateEntity("enemy");
+		{
+			enemy.emplace<RendererComponent>().SetMesh(vao1).SetMaterial(checkertexture);
+			enemy.get<Transform>().SetLocalPosition(0, 3.0f, 0);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(enemy);
+		}
 
-		
+		//Object vaos
+		GameObject cross = scene->CreateEntity("cross");
+		{
+			cross.emplace<RendererComponent>().SetMesh(vao4).SetMaterial(checkertexture);
+			cross.get<Transform>().SetLocalPosition(5, 1, -8);
+			cross.get<Transform>().SetLocalRotation(0, 90, 0);
+			cross.get<Transform>().SetLocalScale(0.25, 0.3, 0.3);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(cross);
+		}
+
+		GameObject slab = scene->CreateEntity("slab");
+		{
+			slab.emplace<RendererComponent>().SetMesh(vao5).SetMaterial(checkertexture);
+			slab.get<Transform>().SetLocalPosition(-5, 1, 6);
+			//slab.get<Transform>().SetLocalScale(0.2, 0.2, 0.2);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(slab);
+		}
+
 
 		#pragma endregion 
 		{
@@ -543,13 +611,21 @@ int main() {
 			time.DeltaTime = static_cast<float>(time.CurrentFrame - time.LastFrame);
 
 			TimeCount = TimeCount + 1;
-			EnemySpawnCount = TimeCount / 50;
+			EnemySpawnCount = TimeCount / 200; //50
+			
+			std::cout << LERP(PUOriginPos, PUNewPos, t) << "\n";
 
 			time.DeltaTime = time.DeltaTime > 1.0f ? 1.0f : time.DeltaTime;
 
+			PosTimer += time.DeltaTime;
 
-			
-			
+			if (PosTimer >= PosMaxTime)
+			{
+				PosTimer = 0.0f;
+				PULerp = !PULerp;
+			}
+
+			t = PosTimer / PosMaxTime;
 
 			// Update our FPS tracker data
 			fpsBuffer[frameIx] = 1.0f / time.DeltaTime;
@@ -592,11 +668,36 @@ int main() {
 			glm::mat4 viewProjection = projection * view;
 
 			//Player Collision
-			
+			if (tranX > 27)
+			{
+				tranX = 27;
+			}
+			else if (tranX < -27)
+			{
+				tranX = -27;
+			}
+
+			if (tranZ > 27)
+			{
+				tranZ = 27;
+			}
+			else if (tranZ < -27.5)
+			{
+				tranZ = -27.5;
+			}
 
 			//Set Player Movements
-			barrier.get<Transform>().SetLocalPosition(tranX, 1.0f, tranZ);
-			barrier.get<Transform>().SetLocalRotation(0.0f, rotX, 1.0f);
+			player.get<Transform>().SetLocalPosition(tranX, 1.0f, tranZ);
+			player.get<Transform>().SetLocalRotation(0.0f, rotX, 1.0f);
+
+			if (PULerp == true)
+			{
+				powerup.get<Transform>().SetLocalPosition(3.0f, LERP(PUOriginPos, PUNewPos, t), 8.0f);
+			}
+			else if (PULerp == false)
+			{
+				powerup.get<Transform>().SetLocalPosition(3.0f, LERP(PUNewPos, PUOriginPos, t), 8.0f);
+			}
 
 			//Power Up
 			if (tranX > 2.0f && tranX < 5.0f && tranZ > 6.5f && tranZ < 8.0f && PowerUpTaken == false)
@@ -688,7 +789,7 @@ int main() {
 				{
 					for (int Count = 0; Count < 200; Count++)
 					{
-						enemy.get<Transform>().SetLocalPosition(EnemyPos[Count], 1.0f, EnemyPos[Count + 1]);
+						//Enemy X Movement
 						if (EnemyPos[Count] > tranX)
 						{
 							EnemyPos[Count] = EnemyPos[Count] - 0.02;
@@ -698,19 +799,65 @@ int main() {
 							EnemyPos[Count] = EnemyPos[Count] + 0.02;
 						}
 
-						Count = Count + 1;
-
-						if (EnemyPos[Count] > tranZ)
+						//Enemy Z movement
+						if (EnemyPos[Count + 1] > tranZ)
 						{
-							EnemyPos[Count] = EnemyPos[Count] - 0.02;
+							EnemyPos[Count + 1] = EnemyPos[Count + 1] - 0.02;
 						}
-						else if (EnemyPos[Count] < tranZ)
+						else if (EnemyPos[Count + 1] < tranZ)
 						{
-							EnemyPos[Count] = EnemyPos[Count] + 0.02;
+							EnemyPos[Count + 1] = EnemyPos[Count + 1] + 0.02;
 						}
 
+						//Enemy Collision
+						for (int Count2 = 0; Count2 < 200; Count2++)
+						{
+							if ((EnemyPos[Count] + 1) > (EnemyPos[Count2] - 1) && (EnemyPos[Count] + 1) < EnemyPos[Count2])
+							{
+								EnemyPos[Count] = EnemyPos[Count2] - 2;
+							}
+
+							if ((EnemyPos[Count] - 1) > (EnemyPos[Count2] + 1) && (EnemyPos[Count] - 1) < EnemyPos[Count2])
+							{
+								EnemyPos[Count] = EnemyPos[Count2] + 2;
+							}
+							Count2 = Count2 + 1;
+						}
+
+						enemy.get<Transform>().SetLocalPosition(EnemyPos[Count], 1.0f, EnemyPos[Count + 1]);
 						RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
+						Count = Count + 1;
 					}
+				}
+				else if (renderer.Mesh == vao6)
+				{
+					for (int Count = 0; Count < 18; Count++)
+					{
+						barrier.get<Transform>().SetLocalRotation(0, 0, 0);
+						barrier.get<Transform>().SetLocalPosition(BarrierX, 3.0f, -27.5f);
+						RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
+						if (BarrierX == 0)
+						{
+						}
+						else{
+							barrier.get<Transform>().SetLocalPosition(BarrierX, 3.0f, 26);
+							RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
+						}
+						BarrierX = BarrierX + 3;
+					}
+
+					for (int Count = 0; Count < 18; Count++)
+					{
+						barrier.get<Transform>().SetLocalRotation(0, 90, 0);
+						barrier.get<Transform>().SetLocalPosition(27, 3.0f, BarrierZ);
+						RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
+						barrier.get<Transform>().SetLocalPosition(-27, 3.0f, BarrierZ);
+						RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
+						BarrierZ = BarrierZ + 3;
+					}
+
+					BarrierX = -24;
+					BarrierZ = -27.5f;
 				}
 				else
 				{
