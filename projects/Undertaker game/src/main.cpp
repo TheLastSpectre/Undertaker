@@ -292,16 +292,13 @@ void keyboard() {
 
 	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
 	{
-		rotX += 1.5f;
 		PowerUp = false;
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
 	{
-		rotX -= 1.5f;
 		PowerUp = true;
 	}
-
 }
 
 void mouse() {
