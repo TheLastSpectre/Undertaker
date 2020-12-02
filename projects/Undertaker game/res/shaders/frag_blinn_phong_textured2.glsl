@@ -12,7 +12,7 @@ uniform sampler2D s_Specular;
 uniform vec3  u_AmbientCol;
 uniform float u_AmbientStrength;
 
-uniform vec3  u_LightPos;
+uniform vec3  u_LightPos2;
 uniform vec3 u_LightMix;
 uniform vec3  u_LightCol;
 uniform float u_AmbientLightStrength;
@@ -37,13 +37,13 @@ void main() {
 
 	// Diffuse
 	vec3 N = normalize(inNormal);
-	vec3 lightDir = normalize(u_LightPos - inPos);
+	vec3 lightDir = normalize(u_LightPos2 - inPos);
 
 	float dif = max(dot(N, lightDir), 0.0);
 	vec3 diffuse = dif * u_LightCol;// add diffuse intensity
 
 	//Attenuation
-	float dist = length(u_LightPos - inPos);
+	float dist = length(u_LightPos2 - inPos);
 	float attenuation = 1.0f / (
 		u_LightAttenuationConstant + 
 		u_LightAttenuationLinear * dist +
