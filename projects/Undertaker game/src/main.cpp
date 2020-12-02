@@ -723,8 +723,8 @@ int main() {
 
 		GameObject bullet = scene->CreateEntity("bullet");
 		{
-			bullet.emplace<RendererComponent>().SetMesh(vao9).SetMaterial(woodtexture);
-			bullet.get<Transform>().SetLocalPosition(0, 0, 0);
+			bullet.emplace<RendererComponent>().SetMesh(vao21).SetMaterial(woodtexture);
+			bullet.get<Transform>().SetLocalPosition(0, 5, 0).SetLocalScale(0.2, 0.2, 0.2);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(bullet);
 		}
 		/*
@@ -903,8 +903,8 @@ int main() {
 				PowerUp = false;
 			}
 
-			enemy.get<Transform>().SetLocalPosition(-24, 3.0f, 0).SetLocalScale(4, 4, 4).SetLocalRotation(0, 180, 0);
-			enemy2.get<Transform>().SetLocalPosition(-24, 3.0f, 0).SetLocalScale(4, 4, 4).SetLocalRotation(0, 180, 0);
+			//enemy.get<Transform>().SetLocalPosition(-24, 3.0f, 0).SetLocalScale(4, 4, 4).SetLocalRotation(0, 180, 0);
+			//enemy2.get<Transform>().SetLocalPosition(-24, 3.0f, 0).SetLocalScale(1, 1, 1).SetLocalRotation(0, 180, 0);
 
 			//glm::vec3 p0(20.0, 1.0, 0.0), p1(0.0, 1.0, 20.0), p2(-20.0, 1.0, 0.0), p3(0.0, 1.0, -20.0);
 			//Power Up Catmull Circle
@@ -1092,7 +1092,6 @@ int main() {
 					for (int Count = 0; Count < 18; Count++)
 					{
 						barrier.get<Transform>().SetLocalRotation(0, 90, 0).SetLocalPosition(27, 3.0f, BarrierZ);
-						//barrier.get<Transform>().SetLocalPosition(27, 3.0f, BarrierZ);
 						RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
 						barrier.get<Transform>().SetLocalPosition(-27, 3.0f, BarrierZ);
 						RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
