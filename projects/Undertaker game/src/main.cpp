@@ -298,14 +298,35 @@ void keyboard() {
 
 	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
 	{
-		rotY += 1.5f;
 		PowerUp = false;
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
 	{
-		rotY -= 1.5f;
 		PowerUp = true;
+	}
+}
+
+void mouse() {
+	
+	POINT p;
+	glm::vec2 player(tranX, tranZ); //convert position coords to a vector
+
+	//Grab from entire screen position
+	if (GetCursorPos(&p)) 
+	{
+		//If mouse is on top-most application, convert the coords to be relative to that
+		if (ScreenToClient(GetForegroundWindow(), &p))
+		{
+			glm::vec2 mouse(p.x,p.y);
+			glm::vec2 playerToMouseDirection = (mouse - player);
+			glm::normalize(playerToMouseDirection);
+		}
+	}
+
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)) 
+	{
+		//Spawn bullet
 	}
 }
 
@@ -820,6 +841,7 @@ int main() {
 				frameIx = 0;
 
 			keyboard();
+			mouse();
 
 			// We'll make sure our UI isn't focused before we start handling input for our game
 			if (!ImGui::IsAnyWindowFocused()) {
