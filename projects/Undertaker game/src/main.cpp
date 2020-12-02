@@ -218,12 +218,15 @@ void SetupShaderForFrame(const Shader::sptr& shader, const glm::mat4& view, cons
 //Variables
 GLfloat tranX = 0.0f;
 GLfloat tranZ = 0.0f;
-GLfloat rotX = 0.0f;
-GLfloat rotY = 0.0f;
-GLfloat EnemyX = 0.0f;
-GLfloat EnemyZ = 0.0f;
+GLfloat rotY = 270.0f;
+GLfloat EnemyX = 24.0f;
+GLfloat EnemyZ = 24.0f;
+GLfloat Enemy2X = -24.0f;
+GLfloat Enemy2Z = -24.0f;
 GLfloat EnemyPosX[200];
 GLfloat EnemyPosZ[200];
+GLfloat Enemy2PosX[200];
+GLfloat Enemy2PosZ[200];
 GLfloat BarrierX = -24;
 GLfloat BarrierZ = -27.5;
 GLfloat PosTimer;
@@ -233,11 +236,14 @@ GLfloat CatT = 0.0f;
 GLfloat CatTimer;
 GLfloat CatMaxTime = 4.0f;
 int EnemyNum = 0;
+int Enemy2Num = 0;
 int RandNum = 0;
 int TimeCount = 0;
 int LastTimeCount = 0;
 int EnemySpawnCount = 0;
 int MaxEnemyCount = 0;
+int Enemy2SpawnCount = 0;
+int MaxEnemy2Count = 0;
 int CatmullLoop = 0;
 int CatmullX;
 bool PowerUp = false;
@@ -516,6 +522,8 @@ int main() {
 		Texture2D::sptr white = Texture2D::LoadFromFile("images/white.jpg");
 		Texture2D::sptr skeleton = Texture2D::LoadFromFile("images/skeleton.png");
 		Texture2D::sptr character = Texture2D::LoadFromFile("images/player.png");
+		Texture2D::sptr zombie = Texture2D::LoadFromFile("images/zombie.png");
+		Texture2D::sptr bullettex = Texture2D::LoadFromFile("images/bullet.png");
 		//Texture2D::sptr diffuse2 = Texture2D::LoadFromFile("images/box.bmp");
 		//Texture2D::sptr specular = Texture2D::LoadFromFile("images/Stone_001_Specular.png"); 
 
@@ -587,6 +595,16 @@ int main() {
 		playertexture->Set("s_Diffuse", character);
 		playertexture->Set("u_Shininess", 8.0f);
 
+		ShaderMaterial::sptr zombietexture = ShaderMaterial::Create();
+		zombietexture->Shader = shader;
+		zombietexture->Set("s_Diffuse", zombie);
+		zombietexture->Set("u_Shininess", 8.0f);
+
+		ShaderMaterial::sptr bullettexture = ShaderMaterial::Create();
+		bullettexture->Shader = shader;
+		bullettexture->Set("s_Diffuse", bullettex);
+		bullettexture->Set("u_Shininess", 8.0f);
+
 		// Load a second material for our reflective material!
 		Shader::sptr reflectiveShader = Shader::Create();
 		reflectiveShader->LoadShaderPartFromFile("shaders/vertex_shader.glsl", GL_VERTEX_SHADER);
@@ -638,13 +656,14 @@ int main() {
 		VertexArrayObject::sptr vao17 = ObjLoader::LoadFromFile("models/roundedGrave.obj");
 		VertexArrayObject::sptr vao4 = ObjLoader::LoadFromFile("models/cross.obj");
 		VertexArrayObject::sptr vao19 = ObjLoader::LoadFromFile("models/wall broken wall.obj");
-		VertexArrayObject::sptr vao20 = ObjLoader::LoadFromFile("models/fencegate.obj");
+		VertexArrayObject::sptr vao20 = ObjLoader::LoadFromFile("models/zombie.obj");
+		VertexArrayObject::sptr vao21 = ObjLoader::LoadFromFile("models/Bullet.obj");
 
 		//Player vao
 		GameObject player = scene->CreateEntity("player");
 		{
 			player.emplace<RendererComponent>().SetMesh(vao3).SetMaterial(playertexture);
-			player.get<Transform>().SetLocalPosition(tranX, 3.0f, tranZ).SetLocalRotation(0.0, 90.0f, 0.0).SetLocalScale(2,2, 2);
+			player.get<Transform>().SetLocalPosition(tranX, 3.0f, tranZ).SetLocalRotation(0.0, 0.0f, 0.0).SetLocalScale(2,2, 2);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(player);
 		}
 
@@ -675,8 +694,15 @@ int main() {
 		GameObject enemy = scene->CreateEntity("enemy");
 		{
 			enemy.emplace<RendererComponent>().SetMesh(vao1).SetMaterial(skeletontexture);
-			enemy.get<Transform>().SetLocalPosition(0, 3.0f, 0).SetLocalScale(4, 4, 4).SetLocalRotation(0, 180, 0);
+			enemy.get<Transform>().SetLocalPosition(-24, 3.0f, 0).SetLocalScale(4, 4, 4).SetLocalRotation(0, 180, 0);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(enemy);
+		}
+
+		GameObject enemy2 = scene->CreateEntity("enemy2");
+		{
+			enemy2.emplace<RendererComponent>().SetMesh(vao20).SetMaterial(zombietexture);
+			enemy2.get<Transform>().SetLocalPosition(24, 3.0f, 0).SetLocalScale(1, 1, 1).SetLocalRotation(0, 270, 0);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(enemy2);
 		}
 
 		//Object vaos
@@ -714,6 +740,13 @@ int main() {
 			deadtree2.emplace<RendererComponent>().SetMesh(vao9).SetMaterial(woodtexture);
 			deadtree2.get<Transform>().SetLocalPosition(-18, 1, 14);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(deadtree2);
+		}
+
+		GameObject bullet = scene->CreateEntity("bullet");
+		{
+			bullet.emplace<RendererComponent>().SetMesh(vao9).SetMaterial(woodtexture);
+			bullet.get<Transform>().SetLocalPosition(0, 0, 0);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(bullet);
 		}
 		/*
 		GameObject treestump1 = scene->CreateEntity("treestump1");
@@ -799,6 +832,8 @@ int main() {
 			t = PosTimer / PosMaxTime;
 			CatT = CatTimer / CatMaxTime;
 
+			t = length(p1 - p0);
+
 			// Update our FPS tracker data
 			fpsBuffer[frameIx] = 1.0f / time.DeltaTime;
 			frameIx++;
@@ -860,8 +895,8 @@ int main() {
 			}
 
 			//Set Player Movements
-			player.get<Transform>().SetLocalPosition(tranX, 1.0f, tranZ).SetLocalRotation(0.0f, rotX, 1.0f);
-			//enemy.get<Transform>().SetLocalRotation(0.0f, rotX, 0.0f).SetLocalPosition(tranX, 1.0f, tranZ);
+			player.get<Transform>().SetLocalPosition(tranX, 1.0f, tranZ).SetLocalRotation(0.0f, rotY, 1.0f);
+			//enemy.get<Transform>().SetLocalRotation(0, test, 0).SetLocalPosition(tranX, 1.0f, tranZ);
 
 			//Power Up
 			if (PULerp == true)
@@ -890,6 +925,9 @@ int main() {
 				PowerUp = false;
 			}
 
+			enemy.get<Transform>().SetLocalPosition(-24, 3.0f, 0).SetLocalScale(4, 4, 4).SetLocalRotation(0, 180, 0);
+			enemy2.get<Transform>().SetLocalPosition(-24, 3.0f, 0).SetLocalScale(4, 4, 4).SetLocalRotation(0, 180, 0);
+
 			//glm::vec3 p0(20.0, 1.0, 0.0), p1(0.0, 1.0, 20.0), p2(-20.0, 1.0, 0.0), p3(0.0, 1.0, -20.0);
 			//Power Up Catmull Circle
 			if (CatmullLoop == 0)
@@ -910,7 +948,7 @@ int main() {
 			}
 			
 			//Spawn Enemy
-			if (TimeCount % 2 == 0 && MaxEnemyCount < 200)
+			if (TimeCount % 10 == 0 && MaxEnemyCount < 200)
 			{
 				RandNum = rand() % 3;
 
@@ -935,6 +973,37 @@ int main() {
 						EnemyPosZ[EnemyNum] = EnemyZ;
 						EnemyNum = EnemyNum + 1;
 						MaxEnemyCount = MaxEnemyCount + 1;
+					}
+				}
+			}
+
+			//Spawn Enemy 2
+			if (TimeCount % 10 == 0 && MaxEnemy2Count < 200)
+			{
+				RandNum = rand() % 3;
+
+				if (RandNum == 0)
+				{
+					Enemy2X = (rand() % 44) - 18;
+					Enemy2Z = (rand() % 44) - 22;
+					if ((Enemy2X > -18 && Enemy2X < -14) || (Enemy2X > 22 && Enemy2X < 26))
+					{
+						Enemy2PosX[Enemy2Num] = Enemy2X;
+						Enemy2PosZ[Enemy2Num] = Enemy2Z;
+						Enemy2Num = Enemy2Num + 1;
+						MaxEnemy2Count = MaxEnemy2Count + 1;
+					}
+				}
+				else if (RandNum == 1)
+				{
+					Enemy2X = (rand() % 44) - 18;
+					Enemy2Z = (rand() % 48) - 26;
+					if ((Enemy2Z > -26 && Enemy2Z < -22) || (Enemy2Z > 18 && Enemy2Z < 22))
+					{
+						Enemy2PosX[Enemy2Num] = Enemy2X;
+						Enemy2PosZ[Enemy2Num] = Enemy2Z;
+						Enemy2Num = Enemy2Num + 1;
+						MaxEnemy2Count = MaxEnemy2Count + 1;
 					}
 				}
 			}
@@ -1054,6 +1123,33 @@ int main() {
 
 					BarrierX = -24;
 					BarrierZ = -27.5f;
+				}
+				else if (renderer.Mesh == vao20)
+				{
+					for (int Count = 0; Count < 200; Count++)
+					{
+						//Enemy X Movement
+						if (Enemy2PosX[Count] > tranX)
+						{
+							Enemy2PosX[Count] = Enemy2PosX[Count] - 0.02;
+						}
+						else if (Enemy2PosX[Count] < tranX)
+						{
+							Enemy2PosX[Count] = Enemy2PosX[Count] + 0.02;
+						}
+
+						//Enemy Z movement
+						if (Enemy2PosZ[Count] > tranZ)
+						{
+							Enemy2PosZ[Count] = Enemy2PosZ[Count] - 0.02;
+						}
+						else if (Enemy2PosZ[Count] < tranZ)
+						{
+							Enemy2PosZ[Count] = Enemy2PosZ[Count] + 0.02;
+						}
+						enemy2.get<Transform>().SetLocalPosition(Enemy2PosX[Count], 1.0f, Enemy2PosZ[Count]).SetLocalRotation(0, 270, 0);
+						RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
+					}
 				}
 				else
 				{
