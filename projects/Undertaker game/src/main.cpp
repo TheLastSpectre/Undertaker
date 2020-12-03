@@ -299,11 +299,13 @@ void keyboard() {
 	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
 	{
 		PowerUp = false;
+		//rotY = rotY + 1;
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
 	{
 		PowerUp = true;
+		//rotY = rotY - 1;
 	}
 }
 
@@ -519,6 +521,7 @@ int main() {
 		Texture2D::sptr red = Texture2D::LoadFromFile("images/red.jpg");
 		Texture2D::sptr stone = Texture2D::LoadFromFile("images/stone.jpg");
 		Texture2D::sptr wood = Texture2D::LoadFromFile("images/wood.jpg");
+		Texture2D::sptr bark = Texture2D::LoadFromFile("images/bark.jpg");
 		Texture2D::sptr white = Texture2D::LoadFromFile("images/white.jpg");
 		Texture2D::sptr skeleton = Texture2D::LoadFromFile("images/skeleton.png");
 		Texture2D::sptr character = Texture2D::LoadFromFile("images/player.png");
@@ -605,6 +608,11 @@ int main() {
 		bullettexture->Set("s_Diffuse", bullettex);
 		bullettexture->Set("u_Shininess", 8.0f);
 
+		ShaderMaterial::sptr barktexture = ShaderMaterial::Create();
+		barktexture->Shader = shader;
+		barktexture->Set("s_Diffuse", bark);
+		barktexture->Set("u_Shininess", 8.0f);
+
 		// Load a second material for our reflective material!
 		Shader::sptr reflectiveShader = Shader::Create();
 		reflectiveShader->LoadShaderPartFromFile("shaders/vertex_shader.glsl", GL_VERTEX_SHADER);
@@ -616,7 +624,7 @@ int main() {
 		{
 			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/Terrain.obj");
 			terrain.emplace<RendererComponent>().SetMesh(vao).SetMaterial(grassmaterial);
-			terrain.get<Transform>().SetLocalPosition(0.0f, 0.0f, 1.0f).SetLocalScale(2.0f, 0.0f, 2.0f);
+			terrain.get<Transform>().SetLocalPosition(0.0f, 0.0f, 1.0f).SetLocalScale(6.0f, 0.0f, 6.0f);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(terrain);
 		}
 		
@@ -638,18 +646,18 @@ int main() {
 		VertexArrayObject::sptr vao1 = ObjLoader::LoadFromFile("models/skeleton.obj");
 		VertexArrayObject::sptr vao2 = ObjLoader::LoadFromFile("models/powerup.obj");
 		VertexArrayObject::sptr vao3 = ObjLoader::LoadFromFile("models/player.obj");
-		VertexArrayObject::sptr vao5 = ObjLoader::LoadFromFile("models/cube2.obj");
+		VertexArrayObject::sptr vao5 = ObjLoader::LoadFromFile("models/Slab.obj");
 		VertexArrayObject::sptr vao6 = ObjLoader::LoadFromFile("models/fence.obj");
 		VertexArrayObject::sptr vao7 = ObjLoader::LoadFromFile("models/fencegate.obj");
 		VertexArrayObject::sptr vao18 = ObjLoader::LoadFromFile("models/spiderweb.obj");
 		//tree vao
 		VertexArrayObject::sptr vao8 = ObjLoader::LoadFromFile("models/deadTree.obj");
 		VertexArrayObject::sptr vao9 = ObjLoader::LoadFromFile("models/deadTree2.obj");
-		VertexArrayObject::sptr vao10 = ObjLoader::LoadFromFile("models/tree stump 1.obj");
-		VertexArrayObject::sptr vao11 = ObjLoader::LoadFromFile("models/tree stump 2.obj");
-		VertexArrayObject::sptr vao12 = ObjLoader::LoadFromFile("models/tree stump 3.obj");
-		VertexArrayObject::sptr vao13 = ObjLoader::LoadFromFile("models/tree stump 4.obj");
-		VertexArrayObject::sptr vao14 = ObjLoader::LoadFromFile("models/tree stump 5.obj");
+		VertexArrayObject::sptr vao10 = ObjLoader::LoadFromFile("models/TreeStump1.obj");
+		VertexArrayObject::sptr vao11 = ObjLoader::LoadFromFile("models/TreeStump2.obj");
+		VertexArrayObject::sptr vao12 = ObjLoader::LoadFromFile("models/TreeStump3.obj");
+		VertexArrayObject::sptr vao13 = ObjLoader::LoadFromFile("models/TreeStump4.obj");
+		VertexArrayObject::sptr vao14 = ObjLoader::LoadFromFile("models/TreeStump5.obj");
 		//gravestone vao
 		VertexArrayObject::sptr vao15 = ObjLoader::LoadFromFile("models/graveStone1.obj");
 		VertexArrayObject::sptr vao16 = ObjLoader::LoadFromFile("models/graveStone2.obj");
@@ -663,7 +671,7 @@ int main() {
 		GameObject player = scene->CreateEntity("player");
 		{
 			player.emplace<RendererComponent>().SetMesh(vao3).SetMaterial(playertexture);
-			player.get<Transform>().SetLocalPosition(tranX, 3.0f, tranZ).SetLocalRotation(0.0, 0.0f, 0.0).SetLocalScale(2,2, 2);
+			player.get<Transform>().SetLocalPosition(tranX, 3.0f, tranZ).SetLocalRotation(0.0, 0.0f, 0.0).SetLocalScale(0.8,0.8, 0.8);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(player);
 		}
 
@@ -694,7 +702,7 @@ int main() {
 		GameObject enemy = scene->CreateEntity("enemy");
 		{
 			enemy.emplace<RendererComponent>().SetMesh(vao1).SetMaterial(skeletontexture);
-			enemy.get<Transform>().SetLocalPosition(-24, 3.0f, 0).SetLocalScale(4, 4, 4).SetLocalRotation(0, 180, 0);
+			enemy.get<Transform>().SetLocalPosition(-24, 3.0f, 0).SetLocalScale(2, 2, 2).SetLocalRotation(0, 180, 0);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(enemy);
 		}
 
@@ -708,16 +716,16 @@ int main() {
 		//Object vaos
 		GameObject cross = scene->CreateEntity("cross");
 		{
-			cross.emplace<RendererComponent>().SetMesh(vao4).SetMaterial(checkertexture);
+			cross.emplace<RendererComponent>().SetMesh(vao4).SetMaterial(stonetexture);
 			cross.get<Transform>().SetLocalPosition(5, 1, -8).SetLocalRotation(0, 90, 0).SetLocalScale(0.4, 0.5, 0.5);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(cross);
 		}
 
 		GameObject slab = scene->CreateEntity("slab");
 		{
-			slab.emplace<RendererComponent>().SetMesh(vao5).SetMaterial(checkertexture);
+			slab.emplace<RendererComponent>().SetMesh(vao5).SetMaterial(stonetexture);
 			slab.get<Transform>().SetLocalPosition(-5, 1, 6);
-			//slab.get<Transform>().SetLocalScale(0.2, 0.2, 0.2);
+			slab.get<Transform>().SetLocalScale(0.2, 0.2, 0.2);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(slab);
 		}
 
@@ -730,14 +738,14 @@ int main() {
 
 		GameObject deadtree = scene->CreateEntity("deadtree");
 		{
-			deadtree.emplace<RendererComponent>().SetMesh(vao8).SetMaterial(woodtexture);
+			deadtree.emplace<RendererComponent>().SetMesh(vao8).SetMaterial(barktexture);
 			deadtree.get<Transform>().SetLocalPosition(18, 1, 8);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(deadtree);
 		}
 
 		GameObject deadtree2 = scene->CreateEntity("deadtree2");
 		{
-			deadtree2.emplace<RendererComponent>().SetMesh(vao9).SetMaterial(woodtexture);
+			deadtree2.emplace<RendererComponent>().SetMesh(vao9).SetMaterial(barktexture);
 			deadtree2.get<Transform>().SetLocalPosition(-18, 1, 14);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(deadtree2);
 		}
@@ -745,17 +753,73 @@ int main() {
 		GameObject bullet = scene->CreateEntity("bullet");
 		{
 			bullet.emplace<RendererComponent>().SetMesh(vao21).SetMaterial(woodtexture);
-			bullet.get<Transform>().SetLocalPosition(0, 5, 0).SetLocalScale(0.2, 0.2, 0.2);
+			bullet.get<Transform>().SetLocalPosition(0, -1, 0).SetLocalScale(0.2, 0.2, 0.2);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(bullet);
 		}
-		/*
+		
 		GameObject treestump1 = scene->CreateEntity("treestump1");
 		{
-			treestump1.emplace<RendererComponent>().SetMesh(vao15).SetMaterial(woodtexture);
-			treestump1.get<Transform>().SetLocalPosition(-36, 1, -10);
+			treestump1.emplace<RendererComponent>().SetMesh(vao10).SetMaterial(woodtexture);
+			treestump1.get<Transform>().SetLocalPosition(-22, 1, -10);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(treestump1);
 		}
-		*/
+
+		GameObject treestump2 = scene->CreateEntity("treestump2");
+		{
+			treestump2.emplace<RendererComponent>().SetMesh(vao11).SetMaterial(woodtexture);
+			treestump2.get<Transform>().SetLocalPosition(20, 1, -14);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(treestump2);
+		}
+
+		GameObject treestump3 = scene->CreateEntity("treestump3");
+		{
+			treestump3.emplace<RendererComponent>().SetMesh(vao12).SetMaterial(woodtexture);
+			treestump3.get<Transform>().SetLocalPosition(12, 1, 18);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(treestump3);
+		}
+
+		GameObject treestump4 = scene->CreateEntity("treestump4");
+		{
+			treestump4.emplace<RendererComponent>().SetMesh(vao13).SetMaterial(woodtexture);
+			treestump4.get<Transform>().SetLocalPosition(-13, 1, 14);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(treestump4);
+		}
+
+		GameObject treestump5 = scene->CreateEntity("treestump5");
+		{
+			treestump5.emplace<RendererComponent>().SetMesh(vao14).SetMaterial(woodtexture);
+			treestump5.get<Transform>().SetLocalPosition(4, 0.2, 6);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(treestump5);
+		}
+
+		GameObject gravestone1 = scene->CreateEntity("gravestone1");
+		{
+			gravestone1.emplace<RendererComponent>().SetMesh(vao15).SetMaterial(stonetexture);
+			gravestone1.get<Transform>().SetLocalPosition(-10, 1.0, -10);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(gravestone1);
+		}
+
+		GameObject gravestone2 = scene->CreateEntity("gravestone2");
+		{
+			gravestone2.emplace<RendererComponent>().SetMesh(vao16).SetMaterial(stonetexture);
+			gravestone2.get<Transform>().SetLocalPosition(14, 1, -20);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(gravestone2);
+		}
+
+		GameObject roundgravestone = scene->CreateEntity("roundgravestone");
+		{
+			roundgravestone.emplace<RendererComponent>().SetMesh(vao17).SetMaterial(stonetexture);
+			roundgravestone.get<Transform>().SetLocalPosition(0, 1, 22).SetLocalScale(2, 2, 2).SetLocalRotation(0, 90, 0);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(roundgravestone);
+		}
+
+		GameObject brokenwall = scene->CreateEntity("brokenwall");
+		{
+			brokenwall.emplace<RendererComponent>().SetMesh(vao19).SetMaterial(stonetexture);
+			brokenwall.get<Transform>().SetLocalPosition(-22, 1, -22).SetLocalRotation(0, 45, 0).SetLocalScale(0.4, 0.4, 0.4);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(brokenwall);
+		}
+		
 
 		#pragma endregion 
 		{
@@ -896,7 +960,7 @@ int main() {
 
 			//Set Player Movements
 			player.get<Transform>().SetLocalPosition(tranX, 1.0f, tranZ).SetLocalRotation(0.0f, rotY, 1.0f);
-			//enemy.get<Transform>().SetLocalRotation(0, test, 0).SetLocalPosition(tranX, 1.0f, tranZ);
+			//brokenwall.get<Transform>().SetLocalRotation(0, rotY, 0);
 
 			//Power Up
 			if (PULerp == true)
