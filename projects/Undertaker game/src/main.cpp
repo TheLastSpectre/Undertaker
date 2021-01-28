@@ -248,6 +248,7 @@ int CatmullLoop = 0;
 int CatmullX;
 bool PowerUp = false;
 bool PowerUpTaken = false;
+bool PowerUpDropped = false;
 bool PULerp = true;
 glm::vec3 p0(20,10, 0), p1(0,10,20), p2(-20,10,0), p3(0,10,-20);
 
@@ -332,6 +333,8 @@ void mouse() {
 	}
 }
 
+
+
 template<typename T>
 T LERP(const T& p0, const T& p1, float t)
 {
@@ -344,6 +347,160 @@ T Catmull(const T& p0, const T& p1, const T& p2, const T& p3, float t)
 	return 0.5f * (2.f * p1 + t * (-p0 + p2)
 		+ t * t * (2.f * p0 - 5.f * p1 + 4.f * p2 - p3)
 		+ t * t * t * (-p0 + 3.f * p1 - 3.f * p2 + p3));
+}
+
+float CollideX(float tranX, float tranZ)
+{
+	//Left Wall Collision X
+	if (tranX > 27)
+		tranX = 27;
+	//Right Wall Collision X
+	else if (tranX < -27)
+		tranX = -27;
+	//GraveStone X Collision
+	else if (tranX < 4 && tranX > 3.5 && tranZ < 23 && tranZ > 19)
+		return 4;
+	else if (tranX > -4 && tranX < -3.5 && tranZ < 23 && tranZ > 19)
+		return -4;
+	//Cross Gravestone X Collision
+	else if (tranX < 8 && tranX > 7.5 && tranZ < -7 && tranZ > -10)
+		return 8;
+	else if (tranX > 2 && tranX < 2.5 && tranZ < -7 && tranZ > -10)
+		return 2;
+	//Flat Circle Log X Collision
+	else if (tranX < 7 && tranX > 6.5 && tranZ < 8 && tranZ > 2)
+		return 7;
+	else if (tranX > 0 && tranX < 0.5 && tranZ < 8 && tranZ > 2)
+		return 0;
+	//Tall Log X Collision
+	else if (tranX < 14 && tranX > 13.5 && tranZ < 19 && tranZ > 14)
+		return 14;
+	else if (tranX > 9 && tranX < 9.5 && tranZ < 19 && tranZ > 14)
+		return 9;
+	//Left Tree X Collision
+	else if (tranX < 21 && tranX > 20.5 && tranZ < 10 && tranZ > 5)
+		return 21;
+	else if (tranX > 15 && tranX < 15.5 && tranZ < 10 && tranZ > 5)
+		return 15;
+	//Tall Circle Log X Collision
+	else if (tranX < -9 && tranX > -9.5 && tranZ < 17 && tranZ > 9)
+		return -9;
+	else if (tranX > -17 && tranX < -16.5 && tranZ < 17 && tranZ > 9)
+		return -17;
+	//Right Tree X Collision
+	else if (tranX < -15 && tranX > -15.5 && tranZ < 17 && tranZ > 10)
+		return -15;
+	else if (tranX > -22 && tranX < -21.5 && tranZ < 17 && tranZ > 10)
+		return -22;
+	//Square Slab X Collision
+	else if (tranX < -2.4 && tranX > -2.8 && tranZ < 8 && tranZ > 3)
+		return -2.4;
+	else if (tranX > -7.4 && tranX < -7.0 && tranZ < 8 && tranZ > 3)
+		return -7.4;
+	//Tall Grave X Collision
+	else if (tranX < -7 && tranX > -7.5 && tranZ < -6.5 && tranZ > -14.5)
+		return -7;
+	else if (tranX > -13 && tranX < -12.5 && tranZ < -6.5 && tranZ > -14.5)
+		return -13;
+	//Small Circle Log X Collision
+	else if (tranX < 22.2 && tranX > 21.5 && tranZ < -12.2 && tranZ > -16)
+		return 22.2;
+	else if (tranX > 16.6 && tranX < 17.0 && tranZ < -12.2 && tranZ > -16)
+		return 16.6;
+	//Big Gravestone X Collision
+	else if (tranX < 17.0 && tranX > 16.5 && tranZ < -18 && tranZ > -22.5)
+		return 17;
+	else if (tranX > 9.0 && tranX < 9.5 && tranZ < -18 && tranZ > -22.5)
+		return 9;
+	//Oval Log X Collision
+	else if (tranX < -17.0 && tranX > -17.5 && tranZ < -7 && tranZ > -14)
+		return -17;
+	else if (tranX > -25.0 && tranX < -24.5 && tranZ < -7 && tranZ > -14)
+		return -25;
+	//Broken Gravestone X Collision
+	else if (tranX < -14.0 && tranX > -14.5 && tranZ < -20.5 && tranZ > -23.5)
+		return -14;
+	else if (tranX > -26 && tranX < -25.5 && tranZ < -20.5 && tranZ > -23.5)
+		return -26;
+	//No Collision
+	else
+		return tranX;
+}
+
+float CollideZ(float tranX, float tranZ)
+{
+	//GraveStone Z Collision
+	if (tranZ > 27)
+		tranZ = 27;
+	else if (tranZ < -27.5)
+		tranZ = -27.5;
+	else if (tranZ > 19 && tranZ < 19.5 && tranX < 4 && tranX > -4)
+		return 19;
+	else if (tranZ < 23 && tranZ > 22.5 && tranX < 4 && tranX > -4)
+		return 23;
+	//Cross Gravestone Z Collision
+	else if (tranZ > -10 && tranZ < -9.5 && tranX < 8 && tranX > 2)
+		return -10;
+	else if (tranZ < -7 && tranZ > -7.5 && tranX < 8 && tranX > 2)
+		return -7;
+	//Flat Circle Log Z Collision
+	else if (tranZ > 2 && tranZ < 2.5 && tranX < 7 && tranX > 0)
+		return 2;
+	else if (tranZ < 8 && tranZ > 7.5 && tranX < 7 && tranX > 0)
+		return 8;
+	//Tall Log Z Collision
+	else if (tranZ > 14 && tranZ < 14.5 && tranX < 14 && tranX > 9)
+		return 14;
+	else if (tranZ < 19 && tranZ > 18.5 && tranX < 14 && tranX > 9)
+		return 19;
+	//Left Tree Z Collision
+	else if (tranZ > 5 && tranZ < 5.5 && tranX < 21 && tranX > 15)
+		return 5;
+	else if (tranZ < 10 && tranZ > 9.5 && tranX < 21 && tranX > 15)
+		return 10;
+	//Tall Circle Log Z Collision
+	else if (tranZ > 9 && tranZ < 9.5 && tranX < -9 && tranX > -17)
+		return 9;
+	else if (tranZ < 17 && tranZ > 16.5 && tranX < -9 && tranX > -17)
+		return 17;
+	//Right Tree Z Collision
+	else if (tranZ > 10 && tranZ < 10.5 && tranX < -15 && tranX > -22)
+		return 10;
+	else if (tranZ < 17 && tranZ > 16.5 && tranX < -15 && tranX > -22)
+		return 17;
+	//Square Slab Z Collision
+	else if (tranZ > 3 && tranZ < 3.5 && tranX < -2.4 && tranX > -7.4)
+		return 3;
+	else if (tranZ < 8 && tranZ > 7.5 && tranX < -2.4 && tranX > -7.4)
+		return 8;
+	//Tall Gravestone Z Collision
+	else if (tranZ > -14.5 && tranZ < -14.0 && tranX < -7 && tranX > -13)
+		return -14.5;
+	else if (tranZ < -6.5 && tranZ > -7.0 && tranX < -7 && tranX > -13)
+		return -6.5;
+	//Small Circle Log Z Collision
+	else if (tranZ > -16 && tranZ < -15.5 && tranX < 22.2 && tranX > 16.6)
+		return -16;
+	else if (tranZ < -12.2 && tranZ > -12.5 && tranX < 22.2 && tranX > 16.6)
+		return -12.2;
+	//Big Gravestone Z Collision
+	else if (tranZ > -22.5 && tranZ < -22.0 && tranX < 17 && tranX > 9)
+		return -22.5;
+	else if (tranZ < -18 && tranZ > -18.5 && tranX < 17 && tranX > 9)
+		return -18;
+	//Oval Log Z Collision
+	else if (tranZ > -14 && tranZ < -13.5 && tranX < -17 && tranX > -25)
+		return -14;
+	else if (tranZ < -7 && tranZ > -7.5 && tranX < -17 && tranX > -25)
+		return -7;
+	//Broken Gravestone Z Collision
+	else if (tranZ > -23.5 && tranZ < -23.0 && tranX < -14 && tranX > -26)
+		return -23.5;
+	else if (tranZ < -20.5 && tranZ > -21.0 && tranX < -14 && tranX > -26)
+		return -20.5;
+	//No Collision
+	else
+		return tranZ;
 }
 
 int main() {
@@ -527,9 +684,6 @@ int main() {
 		Texture2D::sptr character = Texture2D::LoadFromFile("images/player.png");
 		Texture2D::sptr zombie = Texture2D::LoadFromFile("images/zombie.png");
 		Texture2D::sptr bullettex = Texture2D::LoadFromFile("images/bullet.png");
-		//Texture2D::sptr diffuse2 = Texture2D::LoadFromFile("images/box.bmp");
-		//Texture2D::sptr specular = Texture2D::LoadFromFile("images/Stone_001_Specular.png"); 
-
 
 		// Creating an empty texture
 		Texture2DDescription desc = Texture2DDescription();
@@ -816,7 +970,7 @@ int main() {
 		GameObject brokenwall = scene->CreateEntity("brokenwall");
 		{
 			brokenwall.emplace<RendererComponent>().SetMesh(vao19).SetMaterial(stonetexture);
-			brokenwall.get<Transform>().SetLocalPosition(-22, 1, -22).SetLocalRotation(0, 45, 0).SetLocalScale(0.4, 0.4, 0.4);
+			brokenwall.get<Transform>().SetLocalPosition(-22, 1, -22).SetLocalRotation(0, 0, 0).SetLocalScale(0.4, 0.4, 0.4);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(brokenwall);
 		}
 		
@@ -938,44 +1092,27 @@ int main() {
 			glm::mat4 view = glm::inverse(camTransform.LocalTransform());
 			glm::mat4 projection = cameraObject.get<Camera>().GetProjection();
 			glm::mat4 viewProjection = projection * view;
-
-			//Player Collision
-			if (tranX > 27)
-			{
-				tranX = 27;
-			}
-			else if (tranX < -27)
-			{
-				tranX = -27;
-			}
-
-			if (tranZ > 27)
-			{
-				tranZ = 27;
-			}
-			else if (tranZ < -27.5)
-			{
-				tranZ = -27.5;
-			}
+			
+			//Collision Function
+			tranX = CollideX(tranX, tranZ);
+			tranZ = CollideZ(tranX, tranZ);
 
 			//Set Player Movements
 			player.get<Transform>().SetLocalPosition(tranX, 1.0f, tranZ).SetLocalRotation(0.0f, rotY, 1.0f);
-			//brokenwall.get<Transform>().SetLocalRotation(0, rotY, 0);
 
 			//Power Up
-			if (PULerp == true)
+			if (PULerp == true && PowerUpDropped == true)
 			{
 				powerup.get<Transform>().SetLocalPosition(3.0f, LERP(PUOriginPos, PUNewPos, t), 8.0f);
 			}
-			else if (PULerp == false)
+			else if (PULerp == false && PowerUpDropped == true)
 			{
 				powerup.get<Transform>().SetLocalPosition(3.0f, LERP(PUNewPos, PUOriginPos, t), 8.0f);
 			}
 
-			//Power Up
-			if (tranX > 2.0f && tranX < 5.0f && tranZ > 6.5f && tranZ < 8.0f && PowerUpTaken == false)
+			if (tranX > 2.0f && tranX < 5.0f && tranZ > 6.5f && tranZ < 8.0f && PowerUpTaken == false && PowerUpDropped == true)
 			{				
-				if (PowerUpTaken == false)
+				if (PowerUpTaken == false && PowerUpDropped == true)
 				{
 					PowerUp = true;
 					LastTimeCount = TimeCount + 300;
@@ -987,28 +1124,41 @@ int main() {
 			if (TimeCount == LastTimeCount)
 			{
 				PowerUp = false;
+				
 			}
 
-			//enemy.get<Transform>().SetLocalPosition(-24, 3.0f, 0).SetLocalScale(4, 4, 4).SetLocalRotation(0, 180, 0);
-			//enemy2.get<Transform>().SetLocalPosition(-24, 3.0f, 0).SetLocalScale(1, 1, 1).SetLocalRotation(0, 180, 0);
-
-			//glm::vec3 p0(20.0, 1.0, 0.0), p1(0.0, 1.0, 20.0), p2(-20.0, 1.0, 0.0), p3(0.0, 1.0, -20.0);
 			//Power Up Catmull Circle
-			if (CatmullLoop == 0)
+			if (CatmullLoop == 0 && PowerUpDropped == false)
 			{
 				powerup.get<Transform>().SetLocalPosition(Catmull(p0, p1, p2, p3, CatT));
+				if (rand() % 10 == 1)
+				{
+					PowerUpDropped == true;
+				}
 			}
-			else if (CatmullLoop == 1)
+			else if (CatmullLoop == 1 && PowerUpDropped == false)
 			{
 				powerup.get<Transform>().SetLocalPosition(Catmull(p1, p2, p3, p0, CatT));
+				if (rand() % 10 == 1)
+				{
+					PowerUpDropped == true;
+				}
 			}
-			else if (CatmullLoop == 2)
+			else if (CatmullLoop == 2 && PowerUpDropped == false)
 			{
 				powerup.get<Transform>().SetLocalPosition(Catmull(p2, p3, p0, p1, CatT));
+				if (rand() % 10 == 1)
+				{
+					PowerUpDropped == true;
+				}
 			}
-			else if (CatmullLoop == 3)
+			else if (CatmullLoop == 3 && PowerUpDropped == false)
 			{
 				powerup.get<Transform>().SetLocalPosition(Catmull(p3, p0, p1, p2, CatT));
+				if (rand() % 10 == 1)
+				{
+					PowerUpDropped == true;
+				}
 			}
 			
 			//Spawn Enemy
@@ -1135,26 +1285,9 @@ int main() {
 							EnemyPosZ[Count] = EnemyPosZ[Count] + 0.02;
 						}
 
-						//Enemy Collision
-						/*
-						for (int Count2 = 0; Count2 < 200; Count2++)
-						{
-							if (Count == Count2)
-							{
-							}
-							else {
-								if ((EnemyPosX[Count] + 1) > (EnemyPosX[Count2] - 1) && (EnemyPosX[Count] + 1) < EnemyPosX[Count2])
-								{
-									EnemyPosX[Count] = EnemyPosX[Count2] - 2;
-								}
-
-								if ((EnemyPosX[Count] - 1) > (EnemyPosX[Count2] + 1) && (EnemyPosX[Count] - 1) < EnemyPosX[Count2])
-								{
-									EnemyPosX[Count] = EnemyPosX[Count2] + 2;
-								}
-							}
-						}
-						*/
+						EnemyPosX[Count] = CollideX(EnemyPosX[Count], EnemyPosZ[Count]);
+						EnemyPosZ[Count] = CollideZ(EnemyPosX[Count], EnemyPosZ[Count]);
+						
 						enemy.get<Transform>().SetLocalPosition(EnemyPosX[Count], 1.0f, EnemyPosZ[Count]);
 						RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
 					}
@@ -1210,6 +1343,8 @@ int main() {
 						{
 							Enemy2PosZ[Count] = Enemy2PosZ[Count] + 0.02;
 						}
+						Enemy2PosX[Count] = CollideX(Enemy2PosX[Count], Enemy2PosZ[Count]);
+						Enemy2PosZ[Count] = CollideZ(Enemy2PosX[Count], Enemy2PosZ[Count]);
 						enemy2.get<Transform>().SetLocalPosition(Enemy2PosX[Count], 1.0f, Enemy2PosZ[Count]).SetLocalRotation(0, 270, 0);
 						RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform);
 					}
@@ -1238,3 +1373,4 @@ int main() {
 	Logger::Uninitialize();
 	return 0;
 }
+
