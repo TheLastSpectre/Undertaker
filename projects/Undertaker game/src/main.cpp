@@ -541,9 +541,18 @@ int main() {
 		float     lightAmbientPow = 1.0f;
 		float     lightSpecularPow = 1.0f;
 		glm::vec3 ambientCol = glm::vec3(1.0f);
-		float     ambientPow = 0.1f;
+		float     ambientPow = 0.2f;
 		float     lightLinearFalloff = 0.1f;
 		float     lightQuadraticFalloff = 0.0f;
+		bool DiffuseToggle = false;
+		bool AmbientToggle = false;
+		bool SpecularToggle = false;
+		bool Option1 = false;
+		bool Option2 = false;
+		bool Option3 = false;
+		bool Option4 = false;
+		bool Option5 = false;
+		float CustomEffect = 0.0f;
 
 		// These are our application / scene level uniforms that don't necessarily update
 		// every frame
@@ -556,38 +565,80 @@ int main() {
 		shader->SetUniform("u_LightAttenuationConstant", 1.0f);
 		shader->SetUniform("u_LightAttenuationLinear", lightLinearFalloff);
 		shader->SetUniform("u_LightAttenuationQuadratic", lightQuadraticFalloff);
-		
-		
-		//SECOND SHADER
-		// Load our shaders2
-		Shader::sptr shader2 = Shader::Create();
-		shader2->LoadShaderPartFromFile("shaders/vertex_shader2.glsl", GL_VERTEX_SHADER);
-		shader2->LoadShaderPartFromFile("shaders/frag_blinn_phong_textured2.glsl", GL_FRAGMENT_SHADER);
-		shader2->Link();
-		
-		glm::vec3 lightPos2 = glm::vec3(24.0f, 0.0f, 20.0f);
-		glm::vec3 lightCol2 = glm::vec3(0.9f, 0.85f, 0.5f);
-		float     lightAmbientPow2 = 1.0f;
-		float     lightSpecularPow2 = 1.0f;
-		glm::vec3 ambientCol2 = glm::vec3(1.0f);
-		float     ambientPow2 = 0.1f;
-		float     lightLinearFalloff2 = 0.1f;
-		float     lightQuadraticFalloff2 = 0.0f;
-
-		// These are our application / scene level uniforms that don't necessarily update
-		// every frame
-		shader2->SetUniform("u_LightPos2", lightPos2);
-		shader2->SetUniform("u_LightCol", lightCol2);
-		shader2->SetUniform("u_AmbientLightStrength", lightAmbientPow2);
-		shader2->SetUniform("u_SpecularLightStrength", lightSpecularPow2);
-		shader2->SetUniform("u_AmbientCol", ambientCol2);
-		shader2->SetUniform("u_AmbientStrength", ambientPow2);
-		shader2->SetUniform("u_LightAttenuationConstant", 1.0f);
-		shader2->SetUniform("u_LightAttenuationLinear", lightLinearFalloff2);
-		shader2->SetUniform("u_LightAttenuationQuadratic", lightQuadraticFalloff2);
+		shader->SetUniform("u_Option1", (int)Option1);
+		shader->SetUniform("u_Option2", (int)Option2);
+		shader->SetUniform("u_Option3", (int)Option3);
+		shader->SetUniform("u_Option4", (int)Option4);
+		shader->SetUniform("u_Option5", (int)Option5);
+		shader->SetUniform("u_CustomEffect", CustomEffect);
+		shader->SetUniform("u_DiffuseToggle", (int)DiffuseToggle);
+		shader->SetUniform("u_AmbientToggle", (int)AmbientToggle);
+		shader->SetUniform("u_SpecularToggle", (int)SpecularToggle);
 		
 		// We'll add some ImGui controls to control our shader
 		imGuiCallbacks.push_back([&]() {
+
+			if (ImGui::CollapsingHeader("Debug Toggle Buttons"))
+			{
+				if (ImGui::Checkbox("No Lighting", &Option1))
+				{
+					Option2 = false;
+					Option3 = false;
+					Option4 = false;
+					Option5 = false;
+					DiffuseToggle = false;
+					AmbientToggle = false;
+					SpecularToggle = false;
+					shader->SetUniform("u_Option1", (int)Option1);
+				}
+				if (ImGui::Checkbox("Ambient Only", &Option2))
+				{
+					Option1 = false;
+					Option3 = false;
+					Option4 = false;
+					Option5 = false;
+					DiffuseToggle = false;
+					AmbientToggle = false;
+					SpecularToggle = false;
+					shader->SetUniform("u_Option2", (int)Option2);
+				}
+				if (ImGui::Checkbox("Specular Only", &Option3))
+				{
+					Option1 = false;
+					Option2 = false;
+					Option4 = false;
+					Option5 = false;
+					DiffuseToggle = false;
+					AmbientToggle = false;
+					SpecularToggle = false;
+					shader->SetUniform("u_Option3", (int)Option3);
+				}
+				if (ImGui::Checkbox("Ambient + Specular", &Option4))
+				{
+					Option1 = false;
+					Option2 = false;
+					Option3 = false;
+					Option5 = false;
+					DiffuseToggle = false;
+					AmbientToggle = false;
+					SpecularToggle = false;
+					shader->SetUniform("u_Option4", (int)Option4);
+				}
+				if (ImGui::Checkbox("Ambient + Specular + Custom", &Option5))
+				{
+					Option1 = false;
+					Option2 = false;
+					Option3 = false;
+					Option4 = false;
+					DiffuseToggle = false;
+					AmbientToggle = false;
+					SpecularToggle = false;
+					shader->SetUniform("u_Option5", (int)Option5);
+					shader->SetUniform("u_CustomEffect", CustomEffect);
+				}
+			}
+			
+			
 			if (ImGui::CollapsingHeader("Scene Level Lighting Settings"))
 			{
 				if (ImGui::ColorPicker3("Ambient Color", glm::value_ptr(ambientCol))) {
@@ -618,38 +669,6 @@ int main() {
 					shader->SetUniform("u_LightAttenuationQuadratic", lightQuadraticFalloff);
 				}
 			}
-
-			if (ImGui::CollapsingHeader("Scene Level Lighting Settings 2"))
-			{
-				if (ImGui::ColorPicker3("Ambient Color", glm::value_ptr(ambientCol))) {
-					shader2->SetUniform("u_AmbientCol", ambientCol);
-				}
-				if (ImGui::SliderFloat("Fixed Ambient Power", &ambientPow, 0.01f, 1.0f)) {
-					shader2->SetUniform("u_AmbientStrength", ambientPow);
-				}
-			}
-			if (ImGui::CollapsingHeader("Light Level Lighting Settings 2"))
-			{
-				if (ImGui::DragFloat3("Light Pos 2", glm::value_ptr(lightPos2), 0.01f, -30.0f, 30.0f)) {
-					shader2->SetUniform("u_LightPos2", lightPos2);
-				}
-				if (ImGui::ColorPicker3("Light Col", glm::value_ptr(lightCol))) {
-					shader2->SetUniform("u_LightCol", lightCol);
-				}
-				if (ImGui::SliderFloat("Light Ambient Power", &lightAmbientPow, 0.0f, 1.0f)) {
-					shader2->SetUniform("u_AmbientLightStrength", lightAmbientPow);
-				}
-				if (ImGui::SliderFloat("Light Specular Power", &lightSpecularPow, 0.0f, 1.0f)) {
-					shader2->SetUniform("u_SpecularLightStrength", lightSpecularPow);
-				}
-				if (ImGui::DragFloat("Light Linear Falloff", &lightLinearFalloff, 0.01f, 0.0f, 1.0f)) {
-					shader2->SetUniform("u_LightAttenuationLinear", lightLinearFalloff);
-				}
-				if (ImGui::DragFloat("Light Quadratic Falloff", &lightQuadraticFalloff, 0.01f, 0.0f, 1.0f)) {
-					shader2->SetUniform("u_LightAttenuationQuadratic", lightQuadraticFalloff);
-				}
-			}
-
 		
 			minFps = FLT_MAX;
 			maxFps = 0;

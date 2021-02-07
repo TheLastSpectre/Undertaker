@@ -30,6 +30,20 @@ uniform vec3  u_CamPos;
 
 out vec4 frag_color;
 
+uniform bool u_DiffuseToggle;
+uniform bool u_AmbientToggle;
+uniform bool u_SpecularToggle;
+
+uniform bool u_Option1;
+uniform bool u_Option2;
+uniform bool u_Option3;
+uniform bool u_Option4;
+uniform bool u_Option5;
+
+uniform float u_CustomEffect;
+
+vec3 result = vec3(0.0, 0.0, 0.0);
+
 // https://learnopengl.com/Advanced-Lighting/Advanced-Lighting
 void main() {
 	// Lecture 5
@@ -62,11 +76,6 @@ void main() {
 	vec4 textureColor1 = texture(s_Diffuse, inUV);
 	vec4 textureColor2 = texture(s_Diffuse2, inUV);
 	vec4 textureColor = mix(textureColor1, textureColor2, u_TextureMix);
-
-	vec3 result = (
-		(u_AmbientCol * u_AmbientStrength) + // global ambient light
-		(ambient + diffuse + specular) * attenuation // light factors from our single light
-		) * inColor * textureColor.rgb; // Object color
 
 	frag_color = vec4(result, textureColor.a);
 }
