@@ -552,7 +552,6 @@ int main() {
 		bool Option3 = false;
 		bool Option4 = false;
 		bool Option5 = false;
-		float CustomEffect = 0.0f;
 
 		// These are our application / scene level uniforms that don't necessarily update
 		// every frame
@@ -570,10 +569,6 @@ int main() {
 		shader->SetUniform("u_Option3", (int)Option3);
 		shader->SetUniform("u_Option4", (int)Option4);
 		shader->SetUniform("u_Option5", (int)Option5);
-		shader->SetUniform("u_CustomEffect", CustomEffect);
-		shader->SetUniform("u_DiffuseToggle", (int)DiffuseToggle);
-		shader->SetUniform("u_AmbientToggle", (int)AmbientToggle);
-		shader->SetUniform("u_SpecularToggle", (int)SpecularToggle);
 		
 		// We'll add some ImGui controls to control our shader
 		imGuiCallbacks.push_back([&]() {
@@ -582,47 +577,35 @@ int main() {
 			{
 				if (ImGui::Checkbox("No Lighting", &Option1))
 				{
+					Option1 = true;
 					Option2 = false;
 					Option3 = false;
 					Option4 = false;
 					Option5 = false;
-					DiffuseToggle = false;
-					AmbientToggle = false;
-					SpecularToggle = false;
-					shader->SetUniform("u_Option1", (int)Option1);
 				}
 				if (ImGui::Checkbox("Ambient Only", &Option2))
 				{
 					Option1 = false;
+					Option2 = true;
 					Option3 = false;
 					Option4 = false;
 					Option5 = false;
-					DiffuseToggle = false;
-					AmbientToggle = false;
-					SpecularToggle = false;
-					shader->SetUniform("u_Option2", (int)Option2);
 				}
 				if (ImGui::Checkbox("Specular Only", &Option3))
 				{
 					Option1 = false;
 					Option2 = false;
+					Option3 = true;
 					Option4 = false;
 					Option5 = false;
-					DiffuseToggle = false;
-					AmbientToggle = false;
-					SpecularToggle = false;
-					shader->SetUniform("u_Option3", (int)Option3);
 				}
 				if (ImGui::Checkbox("Ambient + Specular", &Option4))
 				{
 					Option1 = false;
 					Option2 = false;
 					Option3 = false;
+					Option4 = true;
 					Option5 = false;
-					DiffuseToggle = false;
-					AmbientToggle = false;
-					SpecularToggle = false;
-					shader->SetUniform("u_Option4", (int)Option4);
 				}
 				if (ImGui::Checkbox("Ambient + Specular + Custom", &Option5))
 				{
@@ -630,12 +613,14 @@ int main() {
 					Option2 = false;
 					Option3 = false;
 					Option4 = false;
-					DiffuseToggle = false;
-					AmbientToggle = false;
-					SpecularToggle = false;
-					shader->SetUniform("u_Option5", (int)Option5);
-					shader->SetUniform("u_CustomEffect", CustomEffect);
+					Option5 = true;
 				}
+
+				shader->SetUniform("u_Option1", (int)Option1);
+				shader->SetUniform("u_Option2", (int)Option2);
+				shader->SetUniform("u_Option3", (int)Option3);
+				shader->SetUniform("u_Option4", (int)Option4);
+				shader->SetUniform("u_Option5", (int)Option5);
 			}
 			
 			
