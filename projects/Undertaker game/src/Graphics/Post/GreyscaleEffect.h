@@ -1,0 +1,24 @@
+#pragma once
+
+#include "Graphics/Post/PostEffect.h"
+
+class GreyscaleEffect : public PostEffect
+{
+public:
+	//Initialize framebuffer
+	//Overrides post effect Init
+	void Init(unsigned width, unsigned height) override;
+
+	//Applies the effect to this buffer
+	//Passes the previous framebuffer with the texture to apply as parameter
+	void ApplyEffect(PostEffect* buffer) override;
+
+	//Getters
+	float GetIntensity() const;
+
+	//Setters
+	void SetIntensity(float intensity);
+private:
+	float _intensity = 1.0f;
+
+};

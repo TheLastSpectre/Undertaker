@@ -41,6 +41,8 @@
 #include "Gameplay/Timing.h"
 #include "Graphics/TextureCubeMap.h"
 #include "Graphics/TextureCubeMapData.h"
+#include "Graphics/LUT.h"
+#include "Graphics/Post/CcEffect.h"
 #include <cstdlib>
 
 
@@ -84,6 +86,14 @@ void GlfwWindowResizedCallback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
 	Application::Instance().ActiveScene->Registry().view<Camera>().each([=](Camera & cam) {
 		cam.ResizeWindow(width, height);
+	});
+	Application::Instance().ActiveScene->Registry().view<Framebuffer>().each([=](Framebuffer& buf)
+	{
+		buf.Reshape(width, height);
+	});
+	Application::Instance().ActiveScene->Registry().view<PostEffect>().each([=](PostEffect& buf)
+	{
+		buf.Reshape(width, height);
 	});
 }
 
@@ -256,59 +266,59 @@ GLfloat PUOriginPos = 1.0f;
 GLfloat PUNewPos = 3.5f;
 
 //Keyboard Input
-void keyboard() {
-	//Left
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && PowerUp == false)
-	{
-		tranX += 0.1f;
-	}
-	else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && PowerUp == true)
-	{
-		tranX += 0.2f;
-	}
-
-	//Right
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && PowerUp == false)
-	{
-		tranX -= 0.1f;
-	}
-	else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && PowerUp == true)
-	{
-		tranX -= 0.2f;
-	}
-
-	//Up
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && PowerUp == false)
-	{
-		tranZ += 0.1f;
-	}
-	else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && PowerUp == true)
-	{
-		tranZ += 0.2f;
-	}
-
-	//Down
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && PowerUp == false)
-	{
-		tranZ -= 0.1f;
-	}
-	else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && PowerUp == true)
-	{
-		tranZ -= 0.2f;
-	}
-
-	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
-	{
-		PowerUp = false;
-		//rotY = rotY + 1;
-	}
-
-	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
-	{
-		PowerUp = true;
-		//rotY = rotY - 1;
-	}
-}
+//void keyboard() {
+//	//Left
+//	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && PowerUp == false)
+//	{
+//		tranX += 0.1f;
+//	}
+//	else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && PowerUp == true)
+//	{
+//		tranX += 0.2f;
+//	}
+//
+//	//Right
+//	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && PowerUp == false)
+//	{
+//		tranX -= 0.1f;
+//	}
+//	else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS && PowerUp == true)
+//	{
+//		tranX -= 0.2f;
+//	}
+//
+//	//Up
+//	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && PowerUp == false)
+//	{
+//		tranZ += 0.1f;
+//	}
+//	else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && PowerUp == true)
+//	{
+//		tranZ += 0.2f;
+//	}
+//
+//	//Down
+//	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && PowerUp == false)
+//	{
+//		tranZ -= 0.1f;
+//	}
+//	else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && PowerUp == true)
+//	{
+//		tranZ -= 0.2f;
+//	}
+//
+//	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+//	{
+//		PowerUp = false;
+//		//rotY = rotY + 1;
+//	}
+//
+//	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+//	{
+//		PowerUp = true;
+//		//rotY = rotY - 1;
+//	}
+//}
 
 void mouse() {
 	
@@ -513,6 +523,8 @@ int main() {
 	//Initialize GLAD
 	if (!initGLAD())
 		return 1;
+	
+	Framebuffer::InitFullscreenQuad();
 
 	int frameIx = 0;
 	float fpsBuffer[128];
@@ -529,6 +541,11 @@ int main() {
 	// Push another scope so most memory should be freed *before* we exit the app
 	{
 		#pragma region Shader and ImGui
+
+		Shader::sptr colorCorrectionShader = Shader::Create();
+		colorCorrectionShader->LoadShaderPartFromFile("shaders/passthrough_vert.glsl", GL_VERTEX_SHADER);
+		colorCorrectionShader->LoadShaderPartFromFile("shaders/Post/color_correction_frag.glsl", GL_FRAGMENT_SHADER);
+		colorCorrectionShader->Link();
 
 		// Load our shaders
 		Shader::sptr shader = Shader::Create();
@@ -569,6 +586,8 @@ int main() {
 		shader->SetUniform("u_Option3", (int)Option3);
 		shader->SetUniform("u_Option4", (int)Option4);
 		shader->SetUniform("u_Option5", (int)Option5);
+
+		PostEffect* basicEffect;
 		
 		// We'll add some ImGui controls to control our shader
 		imGuiCallbacks.push_back([&]() {
@@ -623,38 +642,39 @@ int main() {
 				shader->SetUniform("u_Option5", (int)Option5);
 			}
 			
-			
-			if (ImGui::CollapsingHeader("Scene Level Lighting Settings"))
-			{
-				if (ImGui::ColorPicker3("Ambient Color", glm::value_ptr(ambientCol))) {
-					shader->SetUniform("u_AmbientCol", ambientCol);
-				}
-				if (ImGui::SliderFloat("Fixed Ambient Power", &ambientPow, 0.01f, 1.0f)) {
-					shader->SetUniform("u_AmbientStrength", ambientPow);
-				}
-			}
-			if (ImGui::CollapsingHeader("Light Level Lighting Settings"))
-			{
-				if (ImGui::DragFloat3("Light Pos", glm::value_ptr(lightPos), 0.01f, -30.0f, 30.0f)) {
-					shader->SetUniform("u_LightPos", lightPos);
-				}
-				if (ImGui::ColorPicker3("Light Col", glm::value_ptr(lightCol))) {
-					shader->SetUniform("u_LightCol", lightCol);
-				}
-				if (ImGui::SliderFloat("Light Ambient Power", &lightAmbientPow, 0.0f, 1.0f)) {
-					shader->SetUniform("u_AmbientLightStrength", lightAmbientPow);
-				}
-				if (ImGui::SliderFloat("Light Specular Power", &lightSpecularPow, 0.0f, 1.0f)) {
-					shader->SetUniform("u_SpecularLightStrength", lightSpecularPow);
-				}
-				if (ImGui::DragFloat("Light Linear Falloff", &lightLinearFalloff, 0.01f, 0.0f, 1.0f)) {
-					shader->SetUniform("u_LightAttenuationLinear", lightLinearFalloff);
-				}
-				if (ImGui::DragFloat("Light Quadratic Falloff", &lightQuadraticFalloff, 0.01f, 0.0f, 1.0f)) {
-					shader->SetUniform("u_LightAttenuationQuadratic", lightQuadraticFalloff);
-				}
-			}
-		
+			#pragma region Lighting Settings
+			//if (ImGui::CollapsingHeader("Scene Level Lighting Settings"))
+			//{
+			//	if (ImGui::ColorPicker3("Ambient Color", glm::value_ptr(ambientCol))) {
+			//		shader->SetUniform("u_AmbientCol", ambientCol);
+			//	}
+			//	if (ImGui::SliderFloat("Fixed Ambient Power", &ambientPow, 0.01f, 1.0f)) {
+			//		shader->SetUniform("u_AmbientStrength", ambientPow);
+			//	}
+			//}
+			//if (ImGui::CollapsingHeader("Light Level Lighting Settings"))
+			//{
+			//	if (ImGui::DragFloat3("Light Pos", glm::value_ptr(lightPos), 0.01f, -30.0f, 30.0f)) {
+			//		shader->SetUniform("u_LightPos", lightPos);
+			//	}
+			//	if (ImGui::ColorPicker3("Light Col", glm::value_ptr(lightCol))) {
+			//		shader->SetUniform("u_LightCol", lightCol);
+			//	}
+			//	if (ImGui::SliderFloat("Light Ambient Power", &lightAmbientPow, 0.0f, 1.0f)) {
+			//		shader->SetUniform("u_AmbientLightStrength", lightAmbientPow);
+			//	}
+			//	if (ImGui::SliderFloat("Light Specular Power", &lightSpecularPow, 0.0f, 1.0f)) {
+			//		shader->SetUniform("u_SpecularLightStrength", lightSpecularPow);
+			//	}
+			//	if (ImGui::DragFloat("Light Linear Falloff", &lightLinearFalloff, 0.01f, 0.0f, 1.0f)) {
+			//		shader->SetUniform("u_LightAttenuationLinear", lightLinearFalloff);
+			//	}
+			//	if (ImGui::DragFloat("Light Quadratic Falloff", &lightQuadraticFalloff, 0.01f, 0.0f, 1.0f)) {
+			//		shader->SetUniform("u_LightAttenuationQuadratic", lightQuadraticFalloff);
+			//	}
+			//}
+			#pragma endregion
+
 			minFps = FLT_MAX;
 			maxFps = 0;
 			avgFps = 0;
@@ -688,6 +708,11 @@ int main() {
 		Texture2D::sptr character = Texture2D::LoadFromFile("images/player.png");
 		Texture2D::sptr zombie = Texture2D::LoadFromFile("images/zombie.png");
 		Texture2D::sptr bullettex = Texture2D::LoadFromFile("images/bullet.png");
+		LUT3D baseCube("cubes/Neutral-512.cube");
+		LUT3D testCube("cubes/BrightenedCorrection.cube");
+		LUT3D warmCube("cubes/WarmColor.cube");
+		LUT3D coolCube("cubes/CoolColor.cube");
+		LUT3D customCube("cubes/CustomColor.cube");
 
 		// Creating an empty texture
 		Texture2DDescription desc = Texture2DDescription();
@@ -798,7 +823,25 @@ int main() {
 			camera.LookAt(glm::vec3(0));
 			camera.SetFovDegrees(90.0f); // Set an initial FOV
 			camera.SetOrthoHeight(3.0f);
-			BehaviourBinding::BindDisabled<CameraControlBehaviour>(cameraObject);
+			BehaviourBinding::Bind<CameraControlBehaviour>(cameraObject);
+		}
+
+		int width, height;
+		glfwGetWindowSize(window, &width, &height);
+
+		Framebuffer* colorCorrect;
+		GameObject colorCorrectionObj = scene->CreateEntity("Color Correction");
+		{
+			colorCorrect = &colorCorrectionObj.emplace<Framebuffer>();
+			colorCorrect->AddColorTarget(GL_RGBA8);
+			colorCorrect->AddDepthTarget();
+			colorCorrect->Init(width, height);
+		}
+
+		GameObject framebufferObject = scene->CreateEntity("Basic Effect");
+		{
+			basicEffect = &framebufferObject.emplace<PostEffect>();
+			basicEffect->Init(width, height);
 		}
 
 		VertexArrayObject::sptr vao1 = ObjLoader::LoadFromFile("models/skeleton.obj");
@@ -1062,7 +1105,7 @@ int main() {
 			if (frameIx >= 128)
 				frameIx = 0;
 
-			keyboard();
+			//keyboard();
 			mouse();
 
 			// We'll make sure our UI isn't focused before we start handling input for our game
@@ -1086,6 +1129,10 @@ int main() {
 			});
 
 			// Clear the screen
+
+			basicEffect->Clear();
+			colorCorrect->Clear();
+
 			glClearColor(0.08f, 0.17f, 0.31f, 1.0f);
 			glEnable(GL_DEPTH_TEST);
 			glClearDepth(1.0);
@@ -1248,6 +1295,8 @@ int main() {
 			Shader::sptr current = nullptr;
 			ShaderMaterial::sptr currentMat = nullptr;
 
+			colorCorrect->Bind();
+
 			// Iterate over the render group components and draw them
 			renderGroup.each( [&](entt::entity, RendererComponent& renderer, Transform& transform) {
 				// If the shader has changed, bind it and set up it's uniforms
@@ -1359,6 +1408,27 @@ int main() {
 				}
 			});
 
+			colorCorrect->Unbind();
+
+			colorCorrectionShader->Bind();
+
+			colorCorrect->BindColorAsTexture(0, 0);
+			//testCube.bind(30);
+			//baseCube.bind(30);
+			//warmCube.bind(30);
+			//coolCube.bind(30);
+			customCube.bind(30);
+
+			colorCorrect->DrawFullscreenQuad();
+
+			//testCube.unbind(30);
+			//baseCube.unbind(30);
+			//warmCube.unbind(30);
+			//coolCube.unbind(30);
+			customCube.unbind(30);
+			colorCorrect->UnbindTexture(0);
+
+			colorCorrectionShader->UnBind();
 
 			// Draw our ImGui content
 			RenderImGui();
